@@ -3279,6 +3279,509 @@
         }
       }
     },
+    "/user/feedback/submissions": {
+      "get": {
+        "description": "Get user submissions for selected surveys used in feedback generation.",
+        "summary": "User submissions for feedback",
+        "tags": [
+          "default",
+          "user",
+          "feedback"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10
+            }
+          },
+          {
+            "name": "survey",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 128
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "surveyId": {
+                            "type": "string"
+                          },
+                          "userId": {
+                            "type": "string"
+                          },
+                          "startTime": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endTime": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "submissionTime": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "log": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "sessionId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "userAgent": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "customFields": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string",
+                                  "maxLength": 64
+                                },
+                                "value": {
+                                  "type": "string",
+                                  "maxLength": 2048
+                                }
+                              },
+                              "required": [
+                                "name",
+                                "value"
+                              ]
+                            }
+                          },
+                          "meals": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "submissionId": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "hours": {
+                                  "type": "integer"
+                                },
+                                "minutes": {
+                                  "type": "integer"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "maxLength": 64,
+                                  "nullable": true
+                                },
+                                "duration": {
+                                  "type": "integer",
+                                  "nullable": true
+                                },
+                                "customFields": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "name": {
+                                        "type": "string",
+                                        "maxLength": 64
+                                      },
+                                      "value": {
+                                        "type": "string",
+                                        "maxLength": 2048
+                                      }
+                                    },
+                                    "required": [
+                                      "name",
+                                      "value"
+                                    ]
+                                  }
+                                },
+                                "foods": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                      },
+                                      "parentId": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "nullable": true
+                                      },
+                                      "mealId": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                      },
+                                      "index": {
+                                        "type": "integer"
+                                      },
+                                      "code": {
+                                        "type": "string",
+                                        "maxLength": 64
+                                      },
+                                      "englishName": {
+                                        "type": "string",
+                                        "maxLength": 256
+                                      },
+                                      "localName": {
+                                        "type": "string",
+                                        "maxLength": 256,
+                                        "nullable": true
+                                      },
+                                      "locale": {
+                                        "type": "string",
+                                        "maxLength": 64
+                                      },
+                                      "readyMeal": {
+                                        "type": "boolean"
+                                      },
+                                      "searchTerm": {
+                                        "type": "string",
+                                        "maxLength": 256
+                                      },
+                                      "portionSizeId": {
+                                        "type": "string",
+                                        "enum": [
+                                          "as-served",
+                                          "cereal",
+                                          "direct-weight",
+                                          "drink-scale",
+                                          "guide-image",
+                                          "milk-in-a-hot-drink",
+                                          "milk-on-cereal",
+                                          "parent-food-portion",
+                                          "pizza",
+                                          "pizza-v2",
+                                          "recipe-builder",
+                                          "standard-portion",
+                                          "unknown"
+                                        ]
+                                      },
+                                      "reasonableAmount": {
+                                        "type": "boolean"
+                                      },
+                                      "brand": {
+                                        "type": "string",
+                                        "maxLength": 128,
+                                        "nullable": true
+                                      },
+                                      "nutrientTableId": {
+                                        "type": "string",
+                                        "maxLength": 64
+                                      },
+                                      "nutrientTableCode": {
+                                        "type": "string",
+                                        "maxLength": 64
+                                      },
+                                      "barcode": {
+                                        "type": "string",
+                                        "maxLength": 128,
+                                        "nullable": true
+                                      },
+                                      "customFields": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "name": {
+                                              "type": "string",
+                                              "maxLength": 64
+                                            },
+                                            "value": {
+                                              "type": "string",
+                                              "maxLength": 2048
+                                            }
+                                          },
+                                          "required": [
+                                            "name",
+                                            "value"
+                                          ]
+                                        }
+                                      },
+                                      "fields": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "fieldName": {
+                                              "type": "string",
+                                              "maxLength": 64
+                                            },
+                                            "value": {
+                                              "type": "string",
+                                              "maxLength": 512
+                                            }
+                                          },
+                                          "required": [
+                                            "fieldName",
+                                            "value"
+                                          ]
+                                        }
+                                      },
+                                      "nutrients": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "amount": {
+                                              "type": "number"
+                                            },
+                                            "nutrientTypeId": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "amount",
+                                            "nutrientTypeId"
+                                          ]
+                                        }
+                                      },
+                                      "portionSizes": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "name": {
+                                              "type": "string",
+                                              "maxLength": 64
+                                            },
+                                            "value": {
+                                              "type": "string",
+                                              "maxLength": 512
+                                            }
+                                          },
+                                          "required": [
+                                            "name",
+                                            "value"
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "parentId",
+                                      "mealId",
+                                      "index",
+                                      "code",
+                                      "englishName",
+                                      "localName",
+                                      "locale",
+                                      "readyMeal",
+                                      "searchTerm",
+                                      "portionSizeId",
+                                      "reasonableAmount",
+                                      "brand",
+                                      "nutrientTableId",
+                                      "nutrientTableCode",
+                                      "barcode",
+                                      "customFields",
+                                      "fields",
+                                      "nutrients",
+                                      "portionSizes"
+                                    ]
+                                  }
+                                },
+                                "missingFoods": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                      },
+                                      "parentId": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "nullable": true
+                                      },
+                                      "mealId": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                      },
+                                      "index": {
+                                        "type": "integer"
+                                      },
+                                      "name": {
+                                        "type": "string",
+                                        "maxLength": 512,
+                                        "nullable": true
+                                      },
+                                      "brand": {
+                                        "type": "string",
+                                        "maxLength": 512,
+                                        "nullable": true
+                                      },
+                                      "description": {
+                                        "type": "string",
+                                        "maxLength": 1024,
+                                        "nullable": true
+                                      },
+                                      "portionSize": {
+                                        "type": "string",
+                                        "maxLength": 1024,
+                                        "nullable": true
+                                      },
+                                      "leftovers": {
+                                        "type": "string",
+                                        "maxLength": 1024,
+                                        "nullable": true
+                                      },
+                                      "barcode": {
+                                        "type": "string",
+                                        "maxLength": 128,
+                                        "nullable": true
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "parentId",
+                                      "mealId",
+                                      "index",
+                                      "name",
+                                      "brand",
+                                      "description",
+                                      "portionSize",
+                                      "leftovers",
+                                      "barcode"
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "submissionId",
+                                "hours",
+                                "minutes",
+                                "name",
+                                "duration",
+                                "customFields",
+                                "foods",
+                                "missingFoods"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "surveyId",
+                          "userId",
+                          "startTime",
+                          "endTime",
+                          "submissionTime",
+                          "log",
+                          "sessionId",
+                          "userAgent",
+                          "createdAt",
+                          "updatedAt",
+                          "customFields",
+                          "meals"
+                        ]
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "from": {
+                          "type": "number"
+                        },
+                        "lastPage": {
+                          "type": "number"
+                        },
+                        "page": {
+                          "type": "number"
+                        },
+                        "path": {
+                          "type": "string"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "to": {
+                          "type": "number"
+                        },
+                        "total": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "lastPage",
+                        "page",
+                        "path",
+                        "limit",
+                        "to",
+                        "total"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/user/password": {
       "post": {
         "description": "Update user password",
@@ -3565,12 +4068,14 @@
             "schema": {
               "oneOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "maxLength": 128
                 },
                 {
                   "type": "array",
                   "items": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 128
                   }
                 }
               ]
@@ -3583,8 +4088,67 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {}
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "surveyId": {
+                        "type": "string"
+                      },
+                      "userId": {
+                        "type": "string"
+                      },
+                      "startTime": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "endTime": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "submissionTime": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "log": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "sessionId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "userAgent": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "surveyId",
+                      "userId",
+                      "startTime",
+                      "endTime",
+                      "submissionTime",
+                      "log",
+                      "sessionId",
+                      "userAgent",
+                      "createdAt",
+                      "updatedAt"
+                    ]
+                  }
                 }
               }
             }
@@ -5079,11 +5643,18 @@
                         },
                         "code": {
                           "type": "string"
+                        },
+                        "splitWords": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
                         }
                       },
                       "required": [
                         "id",
-                        "code"
+                        "code",
+                        "splitWords"
                       ]
                     },
                     "surveyScheme": {
@@ -29784,8 +30355,10 @@
                               },
                               {
                                 "type": "object",
-                                "additionalProperties": {
-                                  "readOnly": true
+                                "properties": {
+                                  "force": {
+                                    "type": "boolean"
+                                  }
                                 }
                               },
                               {
@@ -30564,8 +31137,10 @@
                         },
                         {
                           "type": "object",
-                          "additionalProperties": {
-                            "readOnly": true
+                          "properties": {
+                            "force": {
+                              "type": "boolean"
+                            }
                           }
                         },
                         {
@@ -31408,8 +31983,10 @@
                         },
                         {
                           "type": "object",
-                          "additionalProperties": {
-                            "readOnly": true
+                          "properties": {
+                            "force": {
+                              "type": "boolean"
+                            }
                           }
                         },
                         {
@@ -36004,8 +36581,10 @@
                         },
                         {
                           "type": "object",
-                          "additionalProperties": {
-                            "readOnly": true
+                          "properties": {
+                            "force": {
+                              "type": "boolean"
+                            }
                           }
                         },
                         {
@@ -38795,6 +39374,40 @@
         }
       }
     },
+    "/admin/metrics/app": {
+      "get": {
+        "description": "Returns internal app metrics for scraping by Prometheus",
+        "summary": "Get metrics (app)",
+        "tags": [
+          "default",
+          "admin",
+          "metrics"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "200"
+          }
+        }
+      }
+    },
+    "/admin/metrics/node": {
+      "get": {
+        "description": "Returns prometheus-node-exporter metrics for the underlying machine",
+        "summary": "Get metrics (node)",
+        "tags": [
+          "default",
+          "admin",
+          "metrics"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "200"
+          }
+        }
+      }
+    },
     "/admin/nutrient-tables": {
       "get": {
         "description": "Browse nutrient tables (paginated list)",
@@ -39869,8 +40482,10 @@
                         },
                         {
                           "type": "object",
-                          "additionalProperties": {
-                            "readOnly": true
+                          "properties": {
+                            "force": {
+                              "type": "boolean"
+                            }
                           }
                         },
                         {
@@ -45044,7 +45659,10 @@
                     "nullable": true
                   },
                   "terms": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
                   },
                   "captcha": {
                     "type": "string",
@@ -56746,8 +57364,10 @@
                         },
                         {
                           "type": "object",
-                          "additionalProperties": {
-                            "readOnly": true
+                          "properties": {
+                            "force": {
+                              "type": "boolean"
+                            }
                           }
                         },
                         {
@@ -64363,8 +64983,10 @@
                               },
                               {
                                 "type": "object",
-                                "additionalProperties": {
-                                  "readOnly": true
+                                "properties": {
+                                  "force": {
+                                    "type": "boolean"
+                                  }
                                 }
                               },
                               {
@@ -65029,8 +65651,10 @@
                       },
                       {
                         "type": "object",
-                        "additionalProperties": {
-                          "readOnly": true
+                        "properties": {
+                          "force": {
+                            "type": "boolean"
+                          }
                         }
                       },
                       {
@@ -65640,8 +66264,10 @@
                         },
                         {
                           "type": "object",
-                          "additionalProperties": {
-                            "readOnly": true
+                          "properties": {
+                            "force": {
+                              "type": "boolean"
+                            }
                           }
                         },
                         {
@@ -66279,8 +66905,10 @@
                         },
                         {
                           "type": "object",
-                          "additionalProperties": {
-                            "readOnly": true
+                          "properties": {
+                            "force": {
+                              "type": "boolean"
+                            }
                           }
                         },
                         {
@@ -66964,8 +67592,10 @@
                       },
                       {
                         "type": "object",
-                        "additionalProperties": {
-                          "readOnly": true
+                        "properties": {
+                          "force": {
+                            "type": "boolean"
+                          }
                         }
                       },
                       {
@@ -67575,8 +68205,10 @@
                         },
                         {
                           "type": "object",
-                          "additionalProperties": {
-                            "readOnly": true
+                          "properties": {
+                            "force": {
+                              "type": "boolean"
+                            }
                           }
                         },
                         {
@@ -68303,8 +68935,10 @@
                         },
                         {
                           "type": "object",
-                          "additionalProperties": {
-                            "readOnly": true
+                          "properties": {
+                            "force": {
+                              "type": "boolean"
+                            }
                           }
                         },
                         {
@@ -69173,8 +69807,10 @@
                               },
                               {
                                 "type": "object",
-                                "additionalProperties": {
-                                  "readOnly": true
+                                "properties": {
+                                  "force": {
+                                    "type": "boolean"
+                                  }
                                 }
                               },
                               {
@@ -69999,8 +70635,10 @@
                         },
                         {
                           "type": "object",
-                          "additionalProperties": {
-                            "readOnly": true
+                          "properties": {
+                            "force": {
+                              "type": "boolean"
+                            }
                           }
                         },
                         {
@@ -70740,8 +71378,10 @@
                         },
                         {
                           "type": "object",
-                          "additionalProperties": {
-                            "readOnly": true
+                          "properties": {
+                            "force": {
+                              "type": "boolean"
+                            }
                           }
                         },
                         {
@@ -72744,7 +73384,7 @@
       "name": "Apache-2.0",
       "url": "https://opensource.org/license/apache-2-0"
     },
-    "version": "2025.3"
+    "version": "2025.4"
   },
   "servers": [
     {
