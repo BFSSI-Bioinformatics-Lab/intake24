@@ -9,7 +9,7 @@ import type { IoC } from '@intake24/api/ioc';
 import type { InheritableAttributes } from '@intake24/api/services/foods/types/inheritable-attributes';
 import { addTime } from '@intake24/api/util';
 import type { CategoryPortionSizeMethod, FoodPortionSizeMethod } from '@intake24/db';
-import { Job as DbJob, Food, SystemLocale } from '@intake24/db';
+import { Category, Job as DbJob, Food, SystemLocale } from '@intake24/db';
 import BaseJob from '../job';
 
 export type ItemTransform = {
@@ -126,6 +126,13 @@ export default class LocaleFoods extends BaseJob<'LocaleFoods'> {
       await this.setProgress(counter);
     }, 2000);
 
+    // Prefetch category names
+    const allCategories = await Category.findAll({
+      where: { localeId: localeCode },
+      attributes: ['id', 'name'],
+    });
+    const categoryNameMap = new Map(allCategories.map(cat => [cat.id, cat.name]));
+
     const filepath = path.resolve(this.fsConfig.local.downloads, filename);
     const output = createWriteStream(filepath, { encoding: 'utf-8', flags: 'w+' });
 
@@ -172,7 +179,12 @@ export default class LocaleFoods extends BaseJob<'LocaleFoods'> {
               portionSizeMethods: foodPSMs = [],
               tags,
             } = food;
-            const { attributes: datAttributes, categories, portionSizeMethods: datPSMs } = dat;
+            const { attributes: datAttributes, categories: categoryIDs, portionSizeMethods: datPSMs } = dat;
+
+            // Map category ids to names
+            const categoryNames = categoryIDs.map(
+              (categoryCode: string) => categoryNameMap.get(categoryCode) ?? 'foo',
+            );
 
             return {
               id,
@@ -207,7 +219,7 @@ export default class LocaleFoods extends BaseJob<'LocaleFoods'> {
                     associatedFoodCode ?? associatedCategoryCode,
                 )
                 .join(', '),
-              categories: categories.join(', '),
+              categories: categoryNames.join(', '),
               brands: brands.map(({ name }) => name).join(', '),
               portionSizeMethods: (foodPSMs.length ? foodPSMs : datPSMs)
                 .map(
