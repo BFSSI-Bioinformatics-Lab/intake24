@@ -214,6 +214,7 @@ const radioListPrompt = baseCustomPrompt.merge(validatedPrompt).extend({
   options: localeOptionList(),
   orientation: z.enum(radioOrientations),
   other: z.boolean(),
+  updateFood: z.boolean(),
 });
 
 const selectPrompt = baseCustomPrompt.merge(validatedPrompt).extend({

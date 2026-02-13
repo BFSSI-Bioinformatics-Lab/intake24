@@ -73,6 +73,7 @@ export const radioListPrompt: Prompts['radio-list-prompt'] = copy({
   options: { en: [] },
   orientation: 'column',
   other: false,
+  updateFood: false,
 });
 
 export const selectPrompt: Prompts['select-prompt'] = copy({

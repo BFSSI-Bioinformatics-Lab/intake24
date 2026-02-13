@@ -36,7 +36,7 @@
       </v-form>
     </v-card-text>
     <template #actions>
-      <next :disabled="!isValid" @click="action('next')" />
+      <next :disabled="!isValid" @click="customAction" />
     </template>
   </component>
 </template>
@@ -44,9 +44,13 @@
 <script lang="ts" setup>
 import type { PropType } from 'vue';
 
+import type { EncodedFood } from '@intake24/common/surveys';
+
 import { computed, ref } from 'vue';
 
 import { usePromptUtils } from '@intake24/survey/composables';
+import { foodsService } from '@intake24/survey/services';
+import { useSurvey } from '@intake24/survey/stores';
 import { useI18n } from '@intake24/ui';
 
 import { BaseLayout, CardLayout, PanelLayout } from '../layouts';
@@ -70,17 +74,18 @@ const emit = defineEmits(['action', 'update:modelValue']);
 const { i18n: { locale } } = useI18n();
 const { action, customPromptLayout, type } = usePromptUtils(props, { emit });
 const { form, inputTooLog } = useForm({ action });
+const survey = useSurvey();
 
 const otherValue = ref('');
 const otherRules = computed(() => [inputTooLog(256)]);
 const selected = ref(props.modelValue);
 
 const state = computed(() =>
-  selected.value === 'other' ? `Other: ${otherValue.value}` : selected.value,
+  (props.prompt.other && selected.value === 'other') ? `Other: ${otherValue.value}` : selected.value,
 );
 const isValid = computed(
   () => !!form.value?.isValid
-    && (!props.prompt.validation.required || (!!state.value && (selected.value !== 'other' || !!otherValue.value))),
+    && (!props.prompt.validation.required || (!!state.value && (!props.prompt.other || (selected.value !== 'other' || !!otherValue.value)))),
 );
 const localeOptions = computed(
   () => props.prompt.options[locale.value] ?? props.prompt.options.en,
@@ -88,6 +93,39 @@ const localeOptions = computed(
 
 function update() {
   emit('update:modelValue', state.value);
+}
+
+// TODO: Move this to a handler
+async function customAction() {
+  if (props.prompt.updateFood) {
+    const foodId = props.food?.id;
+    const opt = localeOptions.value.find(o => o.value === selected.value);
+    const foodCode = opt?.updateFoodValue?.trim();
+
+    if (foodId && foodCode) {
+      try {
+        const foodData = await foodsService.getData(survey.localeId, foodCode);
+        const newFood: EncodedFood = {
+          id: foodId,
+          type: 'encoded-food',
+          data: foodData,
+          searchTerm: props.food?.searchTerm ?? '',
+          portionSizeMethodIndex: null,
+          portionSize: null,
+          customPromptAnswers: props.food?.customPromptAnswers ?? {},
+          flags: props.food?.flags ?? [],
+          linkedFoods: [],
+        };
+
+        survey.replaceFood({ foodId, food: newFood });
+      }
+      catch (error) {
+        console.error('RadioListPrompt failed to replace food:', error);
+      }
+    }
+  }
+
+  action('next');
 }
 
 defineExpose({ isValid });
