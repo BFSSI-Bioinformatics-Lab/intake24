@@ -52,7 +52,7 @@
             v-model="option.updateFoodValue"
             density="compact"
             hide-details="auto"
-            :label="$t('survey-schemes.prompts.updateFood')"
+            :label="$t('common.options.updateFood')"
             variant="outlined"
           />
           <div class="d-flex flex-column flex-sm-row gc-6 px-2">

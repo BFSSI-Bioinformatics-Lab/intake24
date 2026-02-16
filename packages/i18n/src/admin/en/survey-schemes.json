@@ -417,6 +417,7 @@
       "source": "Source categories to trigger"
     },
     "other": "Allow custom other option",
+    "updateFood": "Update food item based on selection",
     "orientation": {
       "_": "Orientation",
       "column": "Column",
