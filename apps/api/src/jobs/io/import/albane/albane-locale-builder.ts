@@ -8,6 +8,7 @@ import type {
   AlbaneQuantificationRow,
   AlbaneStandardUnitRow,
 } from './types';
+import type { DeepLConfig } from '@intake24/api/config';
 import type { IoC } from '@intake24/api/ioc';
 import type { Dictionary } from '@intake24/common/types';
 import type {
@@ -25,7 +26,9 @@ import type { PkgV2AsServedSet } from '@intake24/common/types/package/as-served'
 import type { PkgV2Category } from '@intake24/common/types/package/categories';
 
 import { randomUUID } from 'node:crypto';
-import { createReadStream } from 'node:fs';
+import { createReadStream, existsSync } from 'node:fs';
+import fs from 'node:fs/promises';
+import https from 'node:https';
 import path from 'node:path';
 
 import ExcelJS from 'exceljs';
@@ -94,10 +97,10 @@ export interface AlbaneConversionResult {
   foods: Record<string, PkgV2Food[]>;
   categories: Record<string, PkgV2Category[]>;
   enabledLocalFoods: Record<string, string[]>;
-  asServedSets: PkgV2AsServedSet[];
+  asServedSets?: PkgV2AsServedSet[];
   locales: PkgV2Locale[];
   nutrientTables: PkgV2NutrientTable[];
-  portionSizeImageLabels: {
+  portionSizeImageLabels?: {
     asServed: Record<string, Record<string, string>>;
     guide: Record<string, Record<string, string>>;
     drinkware: Record<string, Record<string, string>>;
@@ -107,8 +110,11 @@ export interface AlbaneConversionResult {
 export class AlbaneLocaleBuilder {
   private readonly sourceDirPath: string;
   private readonly logger: Logger;
+  private readonly deeplConfig: DeepLConfig;
+  private readonly cacheDir: string;
 
   private sourceFoodRecords: AlbaneFoodListRow[] | undefined;
+  private translatedEnglishNames: Record<string, string> | undefined;
   private foodSynonyms: Record<string, string[]> | undefined;
   private foodCategories: Record<string, string[]> | undefined;
 
@@ -123,9 +129,11 @@ export class AlbaneLocaleBuilder {
   private householdMeasuresMap: Record<string, string> | undefined;
   private categoryTags: Record<string, Set<string>> | undefined;
 
-  constructor(logger: Logger, sourceDirPath: string) {
+  constructor(logger: Logger, sourceDirPath: string, deeplConfig: DeepLConfig, cacheDir: string) {
     this.sourceDirPath = sourceDirPath;
     this.logger = logger;
+    this.deeplConfig = deeplConfig;
+    this.cacheDir = cacheDir;
   }
 
   private async readXLSX<T extends Record<string, any>>(
@@ -137,6 +145,31 @@ export class AlbaneLocaleBuilder {
     const startRow = (options?.range ?? 0) + 1; // exceljs is 1-indexed
 
     const stream = createReadStream(filePath);
+
+    // ExcelJS WorkbookReader doesn't propagate stream errors through its async
+    // iterator, so an unhandled 'error' event on the ReadStream crashes the
+    // node process.
+    //
+    // If we intercept the stream errors via the 'error' callback to prevent this,
+    // then the for await loop hangs indefinitely because it is still waiting for
+    // events on a dead stream.
+    //
+    // This workaround breaks the loop by injecting the error outcome into
+    // the iterator via Promise.race()
+    const streamError = new Promise<never>((_, reject) => {
+      stream.on('error', reject);
+    });
+
+    const injectStreamError = <T>(iterable: AsyncIterable<T>): AsyncIterable<T> => ({
+      [Symbol.asyncIterator]() {
+        const it = iterable[Symbol.asyncIterator]();
+        return {
+          next: () => Promise.race([it.next(), streamError]),
+          return: (value?: any) => it.return?.(value) ?? Promise.resolve({ done: true as const, value: undefined }),
+        };
+      },
+    });
+
     const workbookReader = new ExcelJS.stream.xlsx.WorkbookReader(stream, {});
 
     let headers: string[] | undefined;
@@ -159,88 +192,93 @@ export class AlbaneLocaleBuilder {
       dataStartRow = startRow + 1;
     }
 
-    for await (const worksheetReader of workbookReader) {
-      // Check if this is the worksheet we want
-      if (options?.sheetName) {
-        // WorksheetReader the name property, no idea how to access it in a type-safe way
-        const worksheet = worksheetReader as any;
-        if (worksheet.name !== options.sheetName) {
-          continue;
+    try {
+      for await (const worksheetReader of injectStreamError(workbookReader)) {
+        // Check if this is the worksheet we want
+        if (options?.sheetName) {
+          // WorksheetReader the name property, no idea how to access it in a type-safe way
+          const worksheet = worksheetReader as any;
+          if (worksheet.name !== options.sheetName) {
+            continue;
+          }
+          targetSheetFound = true;
         }
-        targetSheetFound = true;
-      }
-      else if (currentSheetIndex > 0) {
-        // We only want the first worksheet if no sheetName specified
-        break;
-      }
-      else {
-        targetSheetFound = true;
-      }
-
-      let currentRowNumber = 0;
-      let totalRowsProcessed = 0;
-
-      for await (const row of worksheetReader) {
-        totalRowsProcessed++;
-
-        // Safety check: abort if we exceed the maximum row limit
-        if (totalRowsProcessed > MAX_XLSX_ROWS) {
-          throw new PackageValidationFileErrors(
-            {
-              [relativePath]: [{
-                key: 'io.verification.excelRowsExceded',
-                params: {
-                  worksheetName: options?.sheetName ?? 'Sheet1',
-                  maxRows: MAX_XLSX_ROWS,
-                },
-              }],
-            },
-          );
+        else if (currentSheetIndex > 0) {
+          // We only want the first worksheet if no sheetName specified
+          break;
         }
-        currentRowNumber = row.number;
+        else {
+          targetSheetFound = true;
+        }
 
-        // Skip rows before startRow
-        if (currentRowNumber < startRow)
-          continue;
+        let currentRowNumber = 0;
+        let totalRowsProcessed = 0;
 
-        // Handle numeric header mode (no headers, use column indices)
-        if (typeof options?.header === 'number') {
-          const rowData: Record<number, string> = {};
-          row.eachCell({ includeEmpty: true }, (cell: ExcelJS.Cell, colNumber: number) => {
-            rowData[colNumber - 1] = cell.value?.toString() ?? '';
+        for await (const row of injectStreamError(worksheetReader)) {
+          totalRowsProcessed++;
+
+          // Safety check: abort if we exceed the maximum row limit
+          if (totalRowsProcessed > MAX_XLSX_ROWS) {
+            throw new PackageValidationFileErrors(
+              {
+                [relativePath]: [{
+                  key: 'io.verification.excelRowsExceded',
+                  params: {
+                    worksheetName: options?.sheetName ?? 'Sheet1',
+                    maxRows: MAX_XLSX_ROWS,
+                  },
+                }],
+              },
+            );
+          }
+          currentRowNumber = row.number;
+
+          // Skip rows before startRow
+          if (currentRowNumber < startRow)
+            continue;
+
+          // Handle numeric header mode (no headers, use column indices)
+          if (typeof options?.header === 'number') {
+            const rowData: Record<number, string> = {};
+            row.eachCell({ includeEmpty: true }, (cell: ExcelJS.Cell, colNumber: number) => {
+              rowData[colNumber - 1] = cell.value?.toString() ?? '';
+            });
+            results.push(rowData as T);
+            continue;
+          }
+
+          // Handle header row if we haven't read it yet
+          if (headers === undefined && currentRowNumber === startRow) {
+            headers = [];
+            row.eachCell({ includeEmpty: true }, (cell: ExcelJS.Cell, colNumber: number) => {
+              headers![colNumber - 1] = cell.value?.toString() ?? '';
+            });
+            continue;
+          }
+
+          // Skip if we're still waiting for headers or before data start
+          if (!headers || currentRowNumber < dataStartRow)
+            continue;
+
+          // Read data row
+          const rowData: Record<string, string> = {};
+          headers.forEach((header, colIndex) => {
+            const cell = row.getCell(colIndex + 1);
+            const value = cell.value;
+            rowData[header] = value?.toString() ?? '';
           });
           results.push(rowData as T);
-          continue;
         }
 
-        // Handle header row if we haven't read it yet
-        if (headers === undefined && currentRowNumber === startRow) {
-          headers = [];
-          row.eachCell({ includeEmpty: true }, (cell: ExcelJS.Cell, colNumber: number) => {
-            headers![colNumber - 1] = cell.value?.toString() ?? '';
-          });
-          continue;
-        }
+        currentSheetIndex++;
 
-        // Skip if we're still waiting for headers or before data start
-        if (!headers || currentRowNumber < dataStartRow)
-          continue;
-
-        // Read data row
-        const rowData: Record<string, string> = {};
-        headers.forEach((header, colIndex) => {
-          const cell = row.getCell(colIndex + 1);
-          const value = cell.value;
-          rowData[header] = value?.toString() ?? '';
-        });
-        results.push(rowData as T);
+        // If we found our target sheet, we can stop
+        if (options?.sheetName && targetSheetFound)
+          break;
       }
-
-      currentSheetIndex++;
-
-      // If we found our target sheet, we can stop
-      if (options?.sheetName && targetSheetFound)
-        break;
+    }
+    finally {
+      stream.destroy();
     }
 
     if (options?.sheetName && !targetSheetFound) {
@@ -323,6 +361,104 @@ export class AlbaneLocaleBuilder {
     }
   }
 
+  private static readonly DEEPL_BATCH_SIZE = 50;
+  private static readonly TRANSLATION_CACHE_FILE = 'deepl-fr-en.json';
+
+  private async loadTranslationCache(): Promise<Record<string, string>> {
+    const cachePath = path.join(this.cacheDir, AlbaneLocaleBuilder.TRANSLATION_CACHE_FILE);
+
+    try {
+      const data = await fs.readFile(cachePath, 'utf-8');
+      return JSON.parse(data);
+    }
+    catch {
+      return {};
+    }
+  }
+
+  private async saveTranslationCache(cache: Record<string, string>): Promise<void> {
+    await fs.mkdir(this.cacheDir, { recursive: true });
+    const cachePath = path.join(this.cacheDir, AlbaneLocaleBuilder.TRANSLATION_CACHE_FILE);
+    await fs.writeFile(cachePath, JSON.stringify(cache, null, 2), 'utf-8');
+  }
+
+  private async translateWithDeepL(strings: string[]): Promise<string[]> {
+    const { apiKey, apiHost } = this.deeplConfig;
+
+    return new Promise<string[]>((resolve, reject) => {
+      const req = https.request(
+        {
+          host: apiHost,
+          port: 443,
+          path: '/v2/translate',
+          method: 'POST',
+          headers: {
+            Authorization: `DeepL-Auth-Key ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+        },
+        (res) => {
+          const chunks: string[] = [];
+          res.setEncoding('utf8');
+          res.on('data', chunk => chunks.push(chunk));
+          res.on('end', () => {
+            if (res.statusCode === 200) {
+              const response = JSON.parse(chunks.join(''));
+              resolve(response.translations.map((t: { text: string }) => t.text));
+            }
+            else {
+              reject(new Error(`DeepL API returned HTTP ${res.statusCode}: ${chunks.join('')}`));
+            }
+          });
+        },
+      );
+
+      req.on('error', reject);
+
+      req.write(JSON.stringify({
+        text: strings,
+        source_lang: 'FR',
+        target_lang: 'EN',
+      }));
+
+      req.end();
+    });
+  }
+
+  private async translateFoodNames(): Promise<void> {
+    const { apiKey } = this.deeplConfig;
+
+    if (!apiKey)
+      throw new Error('DeepL API key is required for Albane package import (DEEPL_AUTH_KEY)');
+
+    const records = this.sourceFoodRecords!;
+    this.translatedEnglishNames = {};
+
+    const cache = await this.loadTranslationCache();
+
+    const uncachedRecords = records.filter(r => !(r.A_LIBELLE in cache));
+
+    this.logger.info(
+      `Translating food names: ${records.length} total, ${records.length - uncachedRecords.length} cached, ${uncachedRecords.length} to translate`,
+    );
+
+    for (let i = 0; i < uncachedRecords.length; i += AlbaneLocaleBuilder.DEEPL_BATCH_SIZE) {
+      const batch = uncachedRecords.slice(i, i + AlbaneLocaleBuilder.DEEPL_BATCH_SIZE);
+      const translations = await this.translateWithDeepL(batch.map(r => r.A_LIBELLE));
+
+      for (let j = 0; j < batch.length; j++) {
+        cache[batch[j].A_LIBELLE] = translations[j];
+      }
+    }
+
+    if (uncachedRecords.length > 0)
+      await this.saveTranslationCache(cache);
+
+    for (const record of records) {
+      this.translatedEnglishNames![record.A_CODE] = cache[record.A_LIBELLE];
+    }
+  }
+
   private async readFoodList(): Promise<void> {
     function getSynonyms(row: any, prefix: string): string[] {
       const synonyms: string[] = [];
@@ -337,7 +473,9 @@ export class AlbaneLocaleBuilder {
       return synonyms;
     }
 
-    this.sourceFoodRecords = await this.readXLSX<AlbaneFoodListRow>('FDLIST_EN.xlsx', {});
+    this.sourceFoodRecords = await this.readXLSX<AlbaneFoodListRow>('FDLIST.xlsx', {});
+
+    await this.translateFoodNames();
 
     const foodSynonymRecords = await this.readXLSX<AlbaneAlternativeDescriptionRow>('ALTERNATIVE_FOOD_DESCRIPTION.xlsx');
 
@@ -398,7 +536,7 @@ export class AlbaneLocaleBuilder {
         version: randomUUID(),
         code: getIntake24FoodCode(row.A_CODE),
         name: capitalize(row.A_LIBELLE.substring(0, 128)),
-        englishName: capitalize(row.A_LIBELLE_EN.substring(0, 128)),
+        englishName: capitalize((this.translatedEnglishNames![row.A_CODE] ?? row.A_LIBELLE).substring(0, 128)),
         attributes: { sameAsBeforeOption: true, reasonableAmount: this.reasonableAmount![row.A_CODE] },
         alternativeNames,
         tags: [...facetFlags, ...categoryTags],
@@ -611,6 +749,14 @@ export class AlbaneLocaleBuilder {
 
   private async readPortionSizeImages(): Promise<void> {
     this.portionSizeImages = [];
+    this.standardUnitLabels = {};
+
+    const filePath = path.join(this.sourceDirPath, 'List.Photos_HHM_Shapes.xlsx');
+
+    if (!existsSync(filePath)) {
+      this.logger.warn('List.Photos_HHM_Shapes.xlsx not found, skipping portion size image data');
+      return;
+    }
 
     const data = await this.readXLSX<AlbanePortionSizeImage>('List.Photos_HHM_Shapes.xlsx', {
       header: [
@@ -643,8 +789,6 @@ export class AlbaneLocaleBuilder {
       range: 1,
       sheetName: 'Photo standard units',
     });
-
-    this.standardUnitLabels = {};
 
     for (const row of standardUnitRows) {
       let id = row[5];
@@ -994,17 +1138,18 @@ export class AlbaneLocaleBuilder {
       [LOCALE_ID]: foods.map(f => f.code),
     };
 
-    const asServedSets = this.buildAsServed();
-    const portionSizeImageLabels = this.buildPortionSizeImageLabels();
+    const hasPortionSizeImages = this.portionSizeImages !== undefined && this.portionSizeImages.length > 0;
 
     return {
       foods: foodsRecord,
       categories: categoriesRecord,
       enabledLocalFoods,
-      asServedSets,
+      ...(hasPortionSizeImages && {
+        asServedSets: this.buildAsServed(),
+        portionSizeImageLabels: this.buildPortionSizeImageLabels(),
+      }),
       locales: [LOCALE_CONFIG],
       nutrientTables: [DUMMY_NUTRIENT_TABLE],
-      portionSizeImageLabels,
     };
   }
 }
