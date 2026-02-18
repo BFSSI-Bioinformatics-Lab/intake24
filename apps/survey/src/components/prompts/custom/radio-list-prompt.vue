@@ -102,7 +102,7 @@ async function customAction() {
     const opt = localeOptions.value.find(o => o.value === selected.value);
     const foodCode = opt?.updateFoodValue?.trim();
 
-    if (foodId && foodCode) {
+    if (foodId && foodCode && foodCode !== 'NO_UPDATE') {
       try {
         const foodData = await foodsService.getData(survey.localeId, foodCode);
         const newFood: EncodedFood = {
