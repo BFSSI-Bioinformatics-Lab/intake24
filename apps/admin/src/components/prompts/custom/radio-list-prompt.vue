@@ -22,6 +22,7 @@
       </v-col>
       <v-col cols="12">
         <v-switch
+          v-if="showUpdateFoodSwitch"
           :disabled="!validationRequired"
           hide-details="auto"
           :label="$t('survey-schemes.prompts.updateFood')"
@@ -53,6 +54,7 @@
 import type { PropType } from 'vue';
 
 import type { Prompts } from '@intake24/common/prompts';
+import type { PromptSection } from '@intake24/common/surveys';
 
 import { defineComponent } from 'vue';
 
@@ -78,6 +80,10 @@ export default defineComponent({
       type: Object as PropType<Prompts['radio-list-prompt']['validation']>,
       required: true,
     },
+    promptSection: {
+      type: String as PropType<PromptSection | undefined>,
+      default: undefined,
+    },
   },
 
   setup() {
@@ -89,9 +95,15 @@ export default defineComponent({
     validationRequired(): boolean {
       return this.validation.required;
     },
+    showUpdateFoodSwitch(): boolean {
+      return this.promptSection === 'foods';
+    },
+    canUseUpdateFood(): boolean {
+      return this.showUpdateFoodSwitch && this.validationRequired;
+    },
   },
   watch: {
-    validationRequired: {
+    canUseUpdateFood: {
       immediate: true,
       handler(value: boolean) {
         if (!value && this.updateFood)
