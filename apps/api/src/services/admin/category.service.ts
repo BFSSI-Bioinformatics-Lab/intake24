@@ -33,7 +33,6 @@ import {
 function adminCategoryService({ cache, db, kyselyDb }: Pick<IoC, 'cache' | 'db' | 'kyselyDb'>) {
   function getCategoryCacheKeys(categoryId: string): CacheKey[] {
     return [
-      `category-all-categories:${categoryId}`,
       `category-parent-categories:${categoryId}`,
     ];
   }
@@ -326,7 +325,6 @@ function adminCategoryService({ cache, db, kyselyDb }: Pick<IoC, 'cache' | 'db' 
                   'description',
                   'pathways',
                   'conversionFactor',
-                  'defaultWeight',
                   'orderBy',
                   'parameters',
                 ]),
@@ -474,7 +472,6 @@ function adminCategoryService({ cache, db, kyselyDb }: Pick<IoC, 'cache' | 'db' 
           description: psm.description,
           pathways: psm.pathways,
           conversionFactor: psm.conversionFactor,
-          defaultWeight: psm.defaultWeight,
           orderBy: psm.orderBy,
           parameters: psm.parameters,
         });
@@ -511,9 +508,7 @@ function adminCategoryService({ cache, db, kyselyDb }: Pick<IoC, 'cache' | 'db' 
         name: category.name,
         simpleName: toSimpleName(category.name)!,
         hidden: category.hidden,
-        // Postgres gets confused between JSON array and native array when receiving an array like this,
-        // stringify makes it accept it as JSON
-        tags: JSON.stringify(category.tags ?? []),
+        tags: category.tags,
         version: randomUUID(),
       }));
 

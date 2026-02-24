@@ -1,8 +1,7 @@
 import type { Job } from 'bullmq';
 
 import type { IoC } from '@intake24/api/ioc';
-import type { InheritableAttributes } from '@intake24/api/services/foods/types/inheritable-attributes';
-import type { CategoryPortionSizeMethod, FoodPortionSizeMethod } from '@intake24/db';
+import type { ResolvedParentData } from '@intake24/api/services';
 
 import { createWriteStream } from 'node:fs';
 import path from 'node:path';
@@ -20,12 +19,7 @@ import BaseJob from '../job';
 
 export type ItemTransform = {
   food: Food;
-  dat: {
-    attributes: Record<string, InheritableAttributes | null>;
-    categoryIds: string[];
-    categoryCodes: string[];
-    portionSizeMethods: (CategoryPortionSizeMethod | FoodPortionSizeMethod)[];
-  };
+  cache: ResolvedParentData;
 };
 
 export default class LocaleFoods extends BaseJob<'LocaleFoods'> {
@@ -36,29 +30,12 @@ export default class LocaleFoods extends BaseJob<'LocaleFoods'> {
   private readonly fsConfig;
 
   private readonly cachedParentCategoriesService;
-  private readonly inheritableAttributesService;
-  private readonly portionSizeMethodsService;
 
-  constructor({
-    fsConfig,
-    logger,
-    cachedParentCategoriesService,
-    inheritableAttributesService,
-    portionSizeMethodsService,
-  }: Pick<
-    IoC,
-    | 'cachedParentCategoriesService'
-    | 'inheritableAttributesService'
-    | 'fsConfig'
-    | 'logger'
-    | 'portionSizeMethodsService'
-  >) {
+  constructor({ fsConfig, logger, cachedParentCategoriesService }: Pick<IoC, | 'cachedParentCategoriesService' | 'fsConfig' | 'logger'>) {
     super({ logger });
 
-    this.inheritableAttributesService = inheritableAttributesService;
     this.fsConfig = fsConfig;
     this.cachedParentCategoriesService = cachedParentCategoriesService;
-    this.portionSizeMethodsService = portionSizeMethodsService;
   }
 
   /**
@@ -105,6 +82,7 @@ export default class LocaleFoods extends BaseJob<'LocaleFoods'> {
       { label: 'Local name', value: 'name' },
       { label: 'Alternative names', value: 'altNames' },
       { label: 'Tags', value: 'tags' },
+      { label: 'Tags (Effective)', value: 'tagsEffective' },
       { label: 'FCT', value: 'nutrientTableId' },
       { label: 'FCT record ID', value: 'nutrientTableRecordId' },
       { label: 'Attr: Ready Meal', value: 'readyMealOption' },
@@ -115,11 +93,11 @@ export default class LocaleFoods extends BaseJob<'LocaleFoods'> {
       { label: 'Attr: Same As Before (Effective)', value: 'sameAsBeforeOptionEffective' },
       { label: 'Attr: Reasonable Amount (Effective)', value: 'reasonableAmountEffective' },
       { label: 'Attr: Use In Recipes (Effective)', value: 'useInRecipesEffective' },
-      { label: 'Associated Food / Category', value: 'associatedFoods' },
+      { label: 'Associated food / category', value: 'associatedFoods' },
       { label: 'Brands', value: 'brands' },
       { label: 'Category IDs', value: 'categoryIds' },
-      { label: 'Category Codes', value: 'categoryCodes' },
-      { label: 'Portion Size methods', value: 'portionSizeMethods' },
+      { label: 'Category codes', value: 'categoryCodes' },
+      { label: 'Portion size methods', value: 'portionSizeMethods' },
     ];
 
     return { localeCode, filename, fields, total };
@@ -149,16 +127,9 @@ export default class LocaleFoods extends BaseJob<'LocaleFoods'> {
       ],
       order: [['code', 'asc']],
       transform: async (food: Food) => {
-        const [attributes, categoryIds, categoryCodes, portionSizeMethods] = await Promise.all([
-          this.inheritableAttributesService.getFoodAttributes([food.id]),
-          this.cachedParentCategoriesService.getFoodAllCategories(food.id),
-          this.cachedParentCategoriesService.getFoodAllCategoryCodes(food.id),
-          food.portionSizeMethods?.length
-            ? this.portionSizeMethodsService.resolvePortionSizeMethods(food)
-            : [],
-        ]);
+        const cache = await this.cachedParentCategoriesService.getFoodCache(food.id);
 
-        return { food, dat: { attributes, categoryIds, categoryCodes, portionSizeMethods } };
+        return { food, cache };
       },
     });
 
@@ -167,7 +138,7 @@ export default class LocaleFoods extends BaseJob<'LocaleFoods'> {
         fields,
         withBOM: true,
         transforms: [
-          ({ food, dat }: ItemTransform) => {
+          ({ food, cache }: ItemTransform) => {
             const {
               id,
               code,
@@ -179,10 +150,9 @@ export default class LocaleFoods extends BaseJob<'LocaleFoods'> {
               brands = [],
               associatedFoods = [],
               nutrientRecords = [],
-              portionSizeMethods: foodPSMs = [],
+              portionSizeMethods = [],
               tags,
             } = food;
-            const { attributes: datAttributes, categoryIds, categoryCodes, portionSizeMethods: datPSMs } = dat;
 
             return {
               id,
@@ -195,22 +165,17 @@ export default class LocaleFoods extends BaseJob<'LocaleFoods'> {
                 return acc;
               }, []).toSorted().join(', '),
               tags: tags.toSorted().join(', '),
+              tagsEffective: cache.tags.join(', '),
               nutrientTableId: nutrientRecords.at(0)?.nutrientTableId,
               nutrientTableRecordId: nutrientRecords.at(0)?.nutrientTableRecordId,
               readyMealOption: attributes?.readyMealOption ?? 'Inherited',
               sameAsBeforeOption: attributes?.sameAsBeforeOption ?? 'Inherited',
               reasonableAmount: attributes?.reasonableAmount ?? 'Inherited',
-              useInRecipes: attributes?.useInRecipes
-                ? ['Anywhere', 'RegularFoodsOnly', 'RecipesOnly'][attributes.useInRecipes]
-                : 'Inherited',
-              readyMealOptionEffective: datAttributes[id]?.readyMealOption ?? 'N/A',
-              sameAsBeforeOptionEffective: datAttributes[id]?.sameAsBeforeOption ?? 'N/A',
-              reasonableAmountEffective: datAttributes[id]?.reasonableAmount ?? 'N/A',
-              useInRecipesEffective: datAttributes[id]?.useInRecipes
-                ? ['Anywhere', 'RegularFoodsOnly', 'RecipesOnly'][
-                    datAttributes[id]?.useInRecipes as number
-                  ]
-                : 'N/A',
+              useInRecipes: attributes?.useInRecipes != null ? ['Anywhere', 'RegularFoodsOnly', 'RecipesOnly'][attributes.useInRecipes] : 'Inherited',
+              readyMealOptionEffective: cache.attributes.readyMealOption ?? 'N/A',
+              sameAsBeforeOptionEffective: cache.attributes.sameAsBeforeOption ?? 'N/A',
+              reasonableAmountEffective: cache.attributes.reasonableAmount ?? 'N/A',
+              useInRecipesEffective: ['Anywhere', 'RegularFoodsOnly', 'RecipesOnly'][cache.attributes.useInRecipes] ?? 'N/A',
               associatedFoods: associatedFoods
                 .map(
                   ({ associatedFoodCode, associatedCategoryCode }) =>
@@ -218,13 +183,13 @@ export default class LocaleFoods extends BaseJob<'LocaleFoods'> {
                 )
                 .toSorted()
                 .join(', '),
-              categoryIds: categoryIds.toSorted().join(', '),
-              categoryCodes: categoryCodes.toSorted().join(', '),
+              categoryIds: cache.ids.join(', '),
+              categoryCodes: cache.codes.join(', '),
               brands: brands.map(({ name }) => name).toSorted().join(', '),
-              portionSizeMethods: (foodPSMs.length ? foodPSMs : datPSMs)
+              portionSizeMethods: portionSizeMethods
                 .toSorted((a, b) => Number(a.orderBy) - Number(b.orderBy))
                 .map((psm) => {
-                  const attr = Object.entries(pick(psm, ['method', 'description', 'pathways', 'defaultWeight', 'conversionFactor', 'orderBy'])).map(
+                  const attr = Object.entries(pick(psm, ['method', 'description', 'pathways', 'conversionFactor', 'orderBy'])).map(
                     ([key, value]) => `${key}: ${value?.toString()}`,
                   ).join('; ');
                   const params = Object.entries(psm.parameters).map(

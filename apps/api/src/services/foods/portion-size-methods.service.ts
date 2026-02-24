@@ -1,19 +1,9 @@
 import type { PortionSizeMethod } from '@intake24/common/surveys';
 import type { UserPortionSizeMethod } from '@intake24/common/types/http/foods/user-food-data';
-import type { FoodPortionSizeMethod } from '@intake24/db';
 
 import { NotFoundError } from '@intake24/api/http/errors';
-import {
-  getCategoryParentCategories,
-  getFoodParentCategories,
-} from '@intake24/api/services/foods/common';
-import {
-  AsServedSet,
-  CategoryPortionSizeMethod,
-  DrinkwareSet,
-  Food,
-  GuideImage,
-} from '@intake24/db';
+import { getCategoryParentCategories, getFoodParentCategories } from '@intake24/api/services/foods/common';
+import { AsServedSet, CategoryPortionSizeMethod, DrinkwareSet, Food, FoodPortionSizeMethod, GuideImage } from '@intake24/db';
 
 function portionSizeMethodsService(imagesBaseUrl: string) {
   /**
@@ -28,7 +18,6 @@ function portionSizeMethodsService(imagesBaseUrl: string) {
         'method',
         'description',
         'pathways',
-        'defaultWeight',
         'conversionFactor',
         'orderBy',
         'parameters',
@@ -69,13 +58,10 @@ function portionSizeMethodsService(imagesBaseUrl: string) {
             'method',
             'description',
             'pathways',
-            'defaultWeight',
             'conversionFactor',
             'orderBy',
             'parameters',
           ],
-          separate: true,
-          order: [['orderBy', 'ASC']],
         },
       ],
     });
@@ -171,6 +157,7 @@ function portionSizeMethodsService(imagesBaseUrl: string) {
       case 'cereal':
       case 'milk-on-cereal':
         return 'portion/cereal.jpg';
+      case 'auto':
       case 'unknown':
         return '';
 
@@ -184,8 +171,9 @@ function portionSizeMethodsService(imagesBaseUrl: string) {
   const resolveUserPortionSizeMethods = async (foodId: string | Food): Promise<UserPortionSizeMethod[]> => {
     const psms = await resolvePortionSizeMethods(foodId);
 
-    return Promise.all(
-      psms.map(async psm => ({
+    return Promise.all(psms
+      .toSorted((a, b) => Number(a.orderBy) - Number(b.orderBy))
+      .map(async psm => ({
         ...psm.get(),
         imageUrl: `${imagesBaseUrl}/${await getPortionSizeImageUrl(psm as PortionSizeMethod)}`,
       })),

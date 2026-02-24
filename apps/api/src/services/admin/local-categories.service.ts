@@ -1,7 +1,7 @@
 import type { Kysely } from 'kysely';
 
 import type { IoC } from '@intake24/api/ioc';
-import type { Pathway, PortionSizeMethod, PortionSizeMethodId } from '@intake24/common/surveys';
+import type { PortionSizeMethod } from '@intake24/common/surveys';
 import type {
   CreateCategoryRequest,
   SimpleCategoryEntry,
@@ -51,7 +51,6 @@ function localCategoriesService({ kyselyDb }: Pick<IoC, 'kyselyDb'>) {
             method: m.method,
             description: m.description,
             pathways: m.pathways,
-            defaultWeight: m.defaultWeight,
             conversionFactor: m.conversionFactor,
             orderBy: index,
             parameters: m.parameters,
@@ -176,16 +175,15 @@ function localCategoriesService({ kyselyDb }: Pick<IoC, 'kyselyDb'>) {
 
       const portionSizeRows = await t
         .selectFrom('categoryPortionSizeMethods')
-        .select(['method', 'description', 'pathways', 'conversionFactor', 'defaultWeight', 'orderBy', 'parameters'])
+        .select(['method', 'description', 'pathways', 'conversionFactor', 'orderBy', 'parameters'])
         .where('categoryId', '=', categoryRow.id)
         .execute();
 
       const portionSizeMethods: PortionSizeMethod[] = portionSizeRows.map(row => ({
-        method: row.method as PortionSizeMethodId /* unsafe! */,
+        method: row.method,
         conversionFactor: row.conversionFactor,
         description: row.description,
-        pathways: row.pathways as Pathway[] /* unsafe! */,
-        defaultWeight: row.defaultWeight,
+        pathways: row.pathways,
         orderBy: row.orderBy,
         parameters: row.parameters as any /* unsafe! */,
       }));

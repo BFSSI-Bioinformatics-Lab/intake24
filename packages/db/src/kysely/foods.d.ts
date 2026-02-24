@@ -5,6 +5,9 @@
 
 import type { ColumnType } from 'kysely';
 
+import type { PortionSizeMethodId, PortionSizeParameter } from '@intake24/common/surveys';
+import type { LocaleTranslation, LocaleTranslations, RequiredLocaleTranslation, UseInRecipeType } from '@intake24/common/types';
+
 export type ArrayType<T> = ArrayTypeImpl<T> extends (infer U)[]
   ? U[]
   : ArrayTypeImpl<T>;
@@ -23,25 +26,13 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
 
 export type Int8 = ColumnType<string, bigint | number | string, bigint | number | string>;
 
-export type Json = JsonValue;
-
-export type JsonArray = JsonValue[];
-
-export type JsonObject = {
-  [x: string]: JsonValue | undefined;
-};
-
-export type JsonPrimitive = boolean | number | string | null;
-
-export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
-
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
 export interface AsServedImages {
   asServedSetId: string;
   id: Generated<Int8>;
   imageId: Int8;
-  label: Json | null;
+  label: LocaleTranslation | null;
   thumbnailImageId: Int8;
   weight: number;
 }
@@ -49,7 +40,7 @@ export interface AsServedImages {
 export interface AsServedSets {
   description: string;
   id: string;
-  label: Json | null;
+  label: LocaleTranslation | null;
   selectionImageId: Int8;
 }
 
@@ -57,12 +48,12 @@ export interface AssociatedFoods {
   associatedCategoryCode: string | null;
   associatedFoodCode: string | null;
   foodId: Int8;
-  genericName: Json;
+  genericName: LocaleTranslation;
   id: Generated<Int8>;
   linkAsMain: boolean;
   multiple: boolean;
   orderBy: Int8;
-  text: Json;
+  text: LocaleTranslation;
 }
 
 export interface AttributeDefaults {
@@ -87,7 +78,7 @@ export interface Categories {
   localeId: string;
   name: string;
   simpleName: string;
-  tags: Generated<Json>;
+  tags: Generated<string[]>;
   version: string;
 }
 
@@ -101,18 +92,17 @@ export interface CategoryAttributes {
   readyMealOption: boolean | null;
   reasonableAmount: number | null;
   sameAsBeforeOption: boolean | null;
-  useInRecipes: number | null;
+  useInRecipes: UseInRecipeType | null;
 }
 
 export interface CategoryPortionSizeMethods {
   categoryId: Int8;
   conversionFactor: number;
-  defaultWeight: number | null;
   description: string;
   id: Generated<Int8>;
-  method: string;
+  method: PortionSizeMethodId;
   orderBy: Int8;
-  parameters: Json;
+  parameters: PortionSizeParameter;
   pathways: ArrayType<EnumCategoryPortionSizeMethodsPathways>;
 }
 
@@ -124,7 +114,7 @@ export interface DrinkwareScales {
   fullLevel: number;
   height: number;
   id: Generated<Int8>;
-  label: Json | null;
+  label: LocaleTranslation | null;
   overlayImageUrl: string;
   width: number;
 }
@@ -134,18 +124,18 @@ export interface DrinkwareScalesV2 {
   choiceId: Int8;
   drinkwareSetId: string;
   id: Generated<Int8>;
-  label: Json | null;
-  outlineCoordinates: Json;
+  label: LocaleTranslation | null;
+  outlineCoordinates: number[];
   volumeMethod: Generated<string>;
-  volumeSamples: Json;
-  volumeSamplesNormalised: Json;
+  volumeSamples: number[];
+  volumeSamplesNormalised: number[];
 }
 
 export interface DrinkwareSets {
   description: string;
   id: string;
   imageMapId: string;
-  label: Json | null;
+  label: LocaleTranslation | null;
 }
 
 export interface DrinkwareVolumeSamples {
@@ -160,30 +150,29 @@ export interface FoodAttributes {
   readyMealOption: boolean | null;
   reasonableAmount: number | null;
   sameAsBeforeOption: boolean | null;
-  useInRecipes: number | null;
+  useInRecipes: UseInRecipeType | null;
 }
 
 export interface FoodPortionSizeMethods {
   conversionFactor: number;
-  defaultWeight: number | null;
   description: string;
   foodId: Int8;
   id: Generated<Int8>;
-  method: string;
+  method: PortionSizeMethodId;
   orderBy: Int8;
-  parameters: Json;
+  parameters: PortionSizeParameter;
   pathways: ArrayType<EnumFoodPortionSizeMethodsPathways>;
 }
 
 export interface Foods {
-  altNames: Generated<Json>;
+  altNames: Generated<LocaleTranslations>;
   code: string;
   englishName: string;
   id: Generated<Int8>;
   localeId: string;
   name: string | null;
   simpleName: string | null;
-  tags: Generated<Json>;
+  tags: Generated<string[]>;
   version: string;
 }
 
@@ -209,7 +198,7 @@ export interface GuideImageObjects {
   guideImageId: string;
   id: Generated<Int8>;
   imageMapObjectId: Int8;
-  label: Json | null;
+  label: LocaleTranslation | null;
   weight: number;
 }
 
@@ -217,7 +206,7 @@ export interface GuideImages {
   description: string;
   id: string;
   imageMapId: string;
-  label: Json | null;
+  label: LocaleTranslation | null;
   selectionImageId: Int8;
 }
 
@@ -225,9 +214,9 @@ export interface ImageMapObjects {
   description: string;
   id: Int8;
   imageMapId: string;
-  label: Json | null;
+  label: LocaleTranslation | null;
   navigationIndex: number;
-  outlineCoordinates: Json;
+  outlineCoordinates: number[];
   overlayImageId: Int8 | null;
 }
 
@@ -235,7 +224,7 @@ export interface ImageMaps {
   baseImageId: Int8;
   description: string;
   id: string;
-  label: Json | null;
+  label: LocaleTranslation | null;
 }
 
 export interface Locales {
@@ -357,10 +346,10 @@ export interface RecipeFoodsSteps {
   categoryCode: string;
   code: string;
   createdAt: Timestamp;
-  description: Json;
+  description: LocaleTranslation;
   id: Generated<Int8>;
   localeId: string;
-  name: Json;
+  name: LocaleTranslation;
   order: number;
   recipeFoodsId: Int8;
   repeatable: Generated<boolean>;
@@ -400,8 +389,8 @@ export interface SplitWords {
 
 export interface StandardUnits {
   createdAt: Timestamp;
-  estimateIn: Json;
-  howMany: Json;
+  estimateIn: RequiredLocaleTranslation;
+  howMany: RequiredLocaleTranslation;
   id: string;
   name: string;
   updatedAt: Timestamp;

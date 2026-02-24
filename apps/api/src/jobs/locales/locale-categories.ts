@@ -1,8 +1,7 @@
 import type { Job } from 'bullmq';
 
 import type { IoC } from '@intake24/api/ioc';
-import type { InheritableAttributes } from '@intake24/api/services/foods/types/inheritable-attributes';
-import type { CategoryPortionSizeMethod, FoodPortionSizeMethod } from '@intake24/db';
+import type { ResolvedParentData } from '@intake24/api/services';
 
 import { createWriteStream } from 'node:fs';
 import path from 'node:path';
@@ -20,12 +19,7 @@ import BaseJob from '../job';
 
 export type ItemTransform = {
   category: Category;
-  dat: {
-    attributes: Record<string, InheritableAttributes | null>;
-    categoryIds: string[];
-    categoryCodes: string[];
-    portionSizeMethods: (CategoryPortionSizeMethod | FoodPortionSizeMethod)[];
-  };
+  cache: ResolvedParentData;
 };
 
 export default class LocaleCategories extends BaseJob<'LocaleCategories'> {
@@ -36,29 +30,12 @@ export default class LocaleCategories extends BaseJob<'LocaleCategories'> {
   private readonly fsConfig;
 
   private readonly cachedParentCategoriesService;
-  private readonly inheritableAttributesService;
-  private readonly portionSizeMethodsService;
 
-  constructor({
-    fsConfig,
-    logger,
-    cachedParentCategoriesService,
-    inheritableAttributesService,
-    portionSizeMethodsService,
-  }: Pick<
-    IoC,
-    | 'cachedParentCategoriesService'
-    | 'inheritableAttributesService'
-    | 'fsConfig'
-    | 'logger'
-    | 'portionSizeMethodsService'
-  >) {
+  constructor({ fsConfig, logger, cachedParentCategoriesService }: Pick<IoC, | 'cachedParentCategoriesService' | 'fsConfig' | 'logger'>) {
     super({ logger });
 
-    this.inheritableAttributesService = inheritableAttributesService;
     this.fsConfig = fsConfig;
     this.cachedParentCategoriesService = cachedParentCategoriesService;
-    this.portionSizeMethodsService = portionSizeMethodsService;
   }
 
   public async run(job: Job): Promise<void> {
@@ -97,6 +74,7 @@ export default class LocaleCategories extends BaseJob<'LocaleCategories'> {
       { label: 'English name', value: 'englishName' },
       { label: 'Local name', value: 'name' },
       { label: 'Tags', value: 'tags' },
+      { label: 'Tags (Effective)', value: 'tagsEffective' },
       { label: 'Attr: Ready Meal', value: 'readyMealOption' },
       { label: 'Attr: Same As Before', value: 'sameAsBeforeOption' },
       { label: 'Attr: Reasonable Amount', value: 'reasonableAmount' },
@@ -105,9 +83,9 @@ export default class LocaleCategories extends BaseJob<'LocaleCategories'> {
       { label: 'Attr: Same As Before (Effective)', value: 'sameAsBeforeOptionEffective' },
       { label: 'Attr: Reasonable Amount (Effective)', value: 'reasonableAmountEffective' },
       { label: 'Attr: Use In Recipes (Effective)', value: 'useInRecipesEffective' },
-      { label: 'Category IDs', value: 'categoryIds' },
-      { label: 'Category Codes', value: 'categoryCodes' },
-      { label: 'Portion Size methods', value: 'portionSizeMethods' },
+      { label: 'Parent category IDs', value: 'categoryIds' },
+      { label: 'Parent category codes', value: 'categoryCodes' },
+      { label: 'Portion size methods', value: 'portionSizeMethods' },
     ];
 
     return { localeCode, filename, fields, total };
@@ -134,16 +112,9 @@ export default class LocaleCategories extends BaseJob<'LocaleCategories'> {
       ],
       order: [['code', 'asc']],
       transform: async (category: Category) => {
-        const [attributes, categoryIds, categoryCodes, portionSizeMethods] = await Promise.all([
-          this.inheritableAttributesService.getCategoryAttributes([category.id]),
-          this.cachedParentCategoriesService.getCategoryAllCategories(category.id),
-          this.cachedParentCategoriesService.getCategoryAllCategoryCodes(category.id),
-          category.portionSizeMethods?.length
-            ? this.portionSizeMethodsService.getCategoryPortionSizeMethods(category.id)
-            : [],
-        ]);
+        const cache = await this.cachedParentCategoriesService.getCategoryCache(category.id);
 
-        return { category, dat: { attributes, categoryIds, categoryCodes, portionSizeMethods } };
+        return { category, cache };
       },
     });
 
@@ -152,7 +123,7 @@ export default class LocaleCategories extends BaseJob<'LocaleCategories'> {
         fields,
         withBOM: true,
         transforms: [
-          ({ category, dat }: ItemTransform) => {
+          ({ category, cache }: ItemTransform) => {
             const {
               id,
               code,
@@ -160,10 +131,9 @@ export default class LocaleCategories extends BaseJob<'LocaleCategories'> {
               englishName,
               name,
               attributes,
-              portionSizeMethods: categoryPSMs = [],
+              portionSizeMethods = [],
               tags,
             } = category;
-            const { attributes: datAttributes, categoryIds, categoryCodes, portionSizeMethods: datPSMs } = dat;
 
             return {
               id,
@@ -172,26 +142,21 @@ export default class LocaleCategories extends BaseJob<'LocaleCategories'> {
               englishName,
               name,
               tags: tags.toSorted().join(', '),
+              tagsEffective: cache.tags.join(', '),
               readyMealOption: attributes?.readyMealOption ?? 'Inherited',
               sameAsBeforeOption: attributes?.sameAsBeforeOption ?? 'Inherited',
               reasonableAmount: attributes?.reasonableAmount ?? 'Inherited',
-              useInRecipes: attributes?.useInRecipes
-                ? ['Anywhere', 'RegularFoodsOnly', 'RecipesOnly'][attributes.useInRecipes]
-                : 'Inherited',
-              readyMealOptionEffective: datAttributes[id]?.readyMealOption ?? 'N/A',
-              sameAsBeforeOptionEffective: datAttributes[id]?.sameAsBeforeOption ?? 'N/A',
-              reasonableAmountEffective: datAttributes[id]?.reasonableAmount ?? 'N/A',
-              useInRecipesEffective: datAttributes[id]?.useInRecipes
-                ? ['Anywhere', 'RegularFoodsOnly', 'RecipesOnly'][
-                    datAttributes[id]?.useInRecipes as number
-                  ]
-                : 'N/A',
-              categoryIds: categoryIds.toSorted().join(', '),
-              categoryCodes: categoryCodes.toSorted().join(', '),
-              portionSizeMethods: (categoryPSMs.length ? categoryPSMs : datPSMs)
+              useInRecipes: attributes?.useInRecipes != null ? ['Anywhere', 'RegularFoodsOnly', 'RecipesOnly'][attributes.useInRecipes] : 'Inherited',
+              readyMealOptionEffective: cache.attributes.readyMealOption ?? 'N/A',
+              sameAsBeforeOptionEffective: cache.attributes.sameAsBeforeOption ?? 'N/A',
+              reasonableAmountEffective: cache.attributes.reasonableAmount ?? 'N/A',
+              useInRecipesEffective: ['Anywhere', 'RegularFoodsOnly', 'RecipesOnly'][cache.attributes.useInRecipes] ?? 'N/A',
+              categoryIds: cache.ids.join(', '),
+              categoryCodes: cache.codes.join(', '),
+              portionSizeMethods: portionSizeMethods
                 .toSorted((a, b) => Number(a.orderBy) - Number(b.orderBy))
                 .map((psm) => {
-                  const attr = Object.entries(pick(psm, ['method', 'description', 'pathways', 'defaultWeight', 'conversionFactor', 'orderBy'])).map(
+                  const attr = Object.entries(pick(psm, ['method', 'description', 'pathways', 'conversionFactor', 'orderBy'])).map(
                     ([key, value]) => `${key}: ${value?.toString()}`,
                   ).join('; ');
                   const params = Object.entries(psm.parameters).map(

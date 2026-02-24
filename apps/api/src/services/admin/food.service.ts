@@ -17,11 +17,8 @@ import { AssociatedFood, Category, Food, FoodAttribute, FoodPortionSizeMethod, O
 function adminFoodService({ cache, db, kyselyDb }: Pick<IoC, 'cache' | 'db' | 'kyselyDb'>) {
   function getFoodCacheKeys(localeId: string, foodId: string, foodCode: string): CacheKey[] {
     return [
-      `food-attributes:${foodId}`,
       `food-entry:${foodId}`,
       `food-entry:${localeId}:${foodCode}`,
-      `food-all-categories:${foodId}`,
-      `food-all-category-codes:${foodId}`,
       `food-parent-categories:${foodId}`,
     ];
   }
@@ -314,7 +311,6 @@ function adminFoodService({ cache, db, kyselyDb }: Pick<IoC, 'cache' | 'db' | 'k
                   'description',
                   'pathways',
                   'conversionFactor',
-                  'defaultWeight',
                   'orderBy',
                   'parameters',
                 ]),
@@ -554,7 +550,6 @@ function adminFoodService({ cache, db, kyselyDb }: Pick<IoC, 'cache' | 'db' | 'k
           pathways: psm.pathways,
           conversionFactor: psm.conversionFactor,
           orderBy: psm.orderBy,
-          defaultWeight: psm.defaultWeight,
           parameters: psm.parameters,
         });
       }
@@ -671,9 +666,7 @@ function adminFoodService({ cache, db, kyselyDb }: Pick<IoC, 'cache' | 'db' | 'k
         name: food.name,
         simpleName: toSimpleName(food.name),
         altNames: food.altNames,
-        // Postgres gets confused between JSON array and native array when receiving an array like this,
-        // stringify makes it accept it as JSON
-        tags: JSON.stringify(food.tags ?? []),
+        tags: food.tags,
         version: randomUUID(),
       }));
 
