@@ -708,7 +708,8 @@
     },
     "checkbox-list-prompt": {
       "title": "Multiple choice",
-      "subtitle": "Ask to choose any number of items from a list"
+      "subtitle": "Ask to choose any number of items from a list",
+      "updateFoodOptions": "Enter a food code for each set of options. Enter NO_UPDATE to prevent food swap."
     },
     "radio-list-prompt": {
       "title": "Single choice",

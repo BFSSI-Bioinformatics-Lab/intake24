@@ -137,7 +137,7 @@ const optionValueRules = computed<RuleCallback[]>(() => [...defaultValueRules, .
 
 function add() {
   const size = currentOptions.value.length + 1;
-  currentOptions.value.push({ id: size, label: `label-${size}`, shortLabel: `shortLabel-${size}`, value: props.numeric ? size : `value-${size}`, updateFoodValue: 'CODE' });
+  currentOptions.value.push({ id: size, label: `label-${size}`, shortLabel: `shortLabel-${size}`, value: props.numeric ? size : `value-${size}`, updateFoodValue: 'NO_UPDATE' });
 };
 
 function remove(index: number) {

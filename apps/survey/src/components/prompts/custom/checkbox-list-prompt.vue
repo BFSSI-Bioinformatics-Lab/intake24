@@ -42,7 +42,7 @@
       </v-form>
     </v-card-text>
     <template #actions>
-      <next :disabled="!isValid" @click="action('next')" />
+      <next :disabled="!isValid" @click="customAction" />
     </template>
   </component>
 </template>
@@ -50,11 +50,14 @@
 <script lang="ts" setup>
 import type { PropType } from 'vue';
 
+import type { EncodedFood } from '@intake24/common/surveys';
 import type { ListOption } from '@intake24/common/types';
 
 import { computed, ref, watch } from 'vue';
 
 import { usePromptUtils } from '@intake24/survey/composables';
+import { foodsService } from '@intake24/survey/services';
+import { useSurvey } from '@intake24/survey/stores';
 import { useI18n } from '@intake24/ui';
 
 import { BaseLayout, CardLayout, PanelLayout } from '../layouts';
@@ -79,6 +82,7 @@ const emit = defineEmits(['action', 'update:modelValue']);
 const { i18n: { locale } } = useI18n();
 const { action, customPromptLayout, type } = usePromptUtils(props, { emit });
 const { form, inputTooLog } = useForm({ action });
+const survey = useSurvey();
 
 const otherEnabled = ref(false);
 const otherValue = ref('');
@@ -91,6 +95,7 @@ const state = computed(() => [...selected.value, otherOutput.value].filter(Boole
 const localeOptions = computed(
   () => props.prompt.options[locale.value] ?? props.prompt.options.en,
 );
+const updateFoodEnabled = computed(() => !!props.prompt.updateFood);
 const isExclusiveSelected = computed(() => !!localeOptions.value.find(option => option.exclusive && props.modelValue.includes(option.value)));
 const isMinSatisfied = computed(() => !props.prompt.validation.min || props.modelValue.length >= props.prompt.validation.min);
 const isMaxSatisfied = computed(() => !props.prompt.validation.max || props.modelValue.length <= props.prompt.validation.max);
@@ -112,6 +117,51 @@ function update(option?: ListOption) {
   }
 
   emit('update:modelValue', [...state.value]);
+}
+
+function selectedSubsetKey() {
+  const options = props.prompt.options.en?.length
+    ? props.prompt.options.en
+    : localeOptions.value;
+
+  const selectedIndexes = [...new Set(selected.value)]
+    .map(value => options.findIndex(option => option.value === value))
+    .filter(index => index >= 0)
+    .sort((left, right) => left - right);
+
+  return selectedIndexes.join('|');
+}
+
+async function customAction() {
+  if (updateFoodEnabled.value) {
+    const foodId = props.food?.id;
+    const subsetKey = selectedSubsetKey();
+    const foodCode = (props.prompt.updateFoodOptions?.[subsetKey] ?? '').trim();
+
+    if (foodId && foodCode && (foodCode !== 'NO_UPDATE')) {
+      try {
+        const foodData = await foodsService.getData(survey.localeId, foodCode);
+        const newFood: EncodedFood = {
+          id: foodId,
+          type: 'encoded-food',
+          data: foodData,
+          searchTerm: props.food?.searchTerm ?? '',
+          portionSizeMethodIndex: null,
+          portionSize: null,
+          customPromptAnswers: props.food?.customPromptAnswers ?? {},
+          flags: props.food?.flags ?? [],
+          linkedFoods: [],
+        };
+
+        survey.replaceFood({ foodId, food: newFood });
+      }
+      catch (error) {
+        console.error('CheckboxListPrompt failed to replace food:', error);
+      }
+    }
+  }
+
+  action('next');
 }
 
 watch(otherEnabled, (val) => {
