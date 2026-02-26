@@ -47,7 +47,7 @@
       <v-col cols="12">
         <v-switch
           hide-details="auto"
-          label="Default option"
+          :label="$t('survey-schemes.prompts.checkbox-list-prompt.updateFoodDefaultOptionSwitch')"
           :model-value="updateFoodDefaultOption"
           @update:model-value="update('updateFoodDefaultOption', $event)"
         />
@@ -55,7 +55,7 @@
       <v-col v-if="updateFoodDefaultOption" cols="12">
         <v-text-field
           hide-details="auto"
-          label="Default food code"
+          :label="$t('survey-schemes.prompts.checkbox-list-prompt.updateFoodDefaultOptionField')"
           :model-value="updateFoodDefaultOptionValue"
           variant="outlined"
           @update:model-value="update('updateFoodDefaultOptionValue', $event)"
@@ -165,6 +165,9 @@ export default defineComponent({
 
       return subsets;
     },
+    optionSubsetKeysSignature(): string {
+      return this.optionSubsets.map(subset => subset.key).join(',');
+    },
   },
 
   watch: {
@@ -179,7 +182,16 @@ export default defineComponent({
       if (value)
         this.update('other', false);
     },
-    optionSubsets() {
+    optionSubsetKeysSignature() {
+      this.syncUpdateFoodOptions();
+    },
+  },
+
+  methods: {
+    syncUpdateFoodOptions() {
+      if (!this.showUpdateFoodConfig)
+        return;
+
       const valid = new Set(this.optionSubsets.map(subset => subset.key));
       const next = Object.entries(this.updateFoodOptions).reduce<Record<string, string>>((acc, [key, value]) => {
         if (valid.has(key))
@@ -188,17 +200,13 @@ export default defineComponent({
         return acc;
       }, {});
 
-      const currentKeys = Object.keys(this.updateFoodOptions);
-      const nextKeys = Object.keys(next);
-      const hasSameKeys = currentKeys.length === nextKeys.length
-        && currentKeys.every(key => valid.has(key));
+      const currentEntries = Object.entries(this.updateFoodOptions);
+      const hasSameEntries = currentEntries.length === Object.keys(next).length
+        && currentEntries.every(([key, value]) => next[key] === value);
 
-      if (!hasSameKeys)
+      if (!hasSameEntries)
         this.update('updateFoodOptions', next);
     },
-  },
-
-  methods: {
     updateSubsetCode(key: string, value: string) {
       this.update('updateFoodOptions', {
         ...this.updateFoodOptions,
