@@ -25,6 +25,8 @@ export const checkboxListPrompt: Prompts['checkbox-list-prompt'] = copy({
   other: false,
   updateFood: false,
   updateFoodOptions: {},
+  updateFoodDefaultOption: false,
+  updateFoodDefaultOptionValue: '',
 });
 
 export const datePickerPrompt: Prompts['date-picker-prompt'] = copy({

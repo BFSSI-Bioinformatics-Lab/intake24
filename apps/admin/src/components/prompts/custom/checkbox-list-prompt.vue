@@ -44,6 +44,23 @@
           {{ $t('survey-schemes.prompts.checkbox-list-prompt.updateFoodOptions') }}
         </v-alert>
       </v-col>
+      <v-col cols="12">
+        <v-switch
+          hide-details="auto"
+          label="Default option"
+          :model-value="updateFoodDefaultOption"
+          @update:model-value="update('updateFoodDefaultOption', $event)"
+        />
+      </v-col>
+      <v-col v-if="updateFoodDefaultOption" cols="12">
+        <v-text-field
+          hide-details="auto"
+          label="Default food code"
+          :model-value="updateFoodDefaultOptionValue"
+          variant="outlined"
+          @update:model-value="update('updateFoodDefaultOptionValue', $event)"
+        />
+      </v-col>
       <v-col
         v-for="subset in optionSubsets"
         :key="subset.key"
@@ -51,7 +68,7 @@
       >
         <v-text-field
           hide-details="auto"
-          :label="`${subset.label} — ${$t('common.options.updateFood')}`"
+          :label="`${subset.label}`"
           :model-value="updateFoodOptions[subset.key] ?? ''"
           variant="outlined"
           @update:model-value="updateSubsetCode(subset.key, $event)"
@@ -84,6 +101,14 @@ export default defineComponent({
     },
     updateFoodOptions: {
       type: Object as PropType<Prompts['checkbox-list-prompt']['updateFoodOptions']>,
+      required: true,
+    },
+    updateFoodDefaultOption: {
+      type: Boolean as PropType<Prompts['checkbox-list-prompt']['updateFoodDefaultOption']>,
+      required: true,
+    },
+    updateFoodDefaultOptionValue: {
+      type: String as PropType<Prompts['checkbox-list-prompt']['updateFoodDefaultOptionValue']>,
       required: true,
     },
     validation: {

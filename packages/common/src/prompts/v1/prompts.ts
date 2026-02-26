@@ -171,6 +171,8 @@ const checkboxListPrompt = z.object({
   other: z.boolean(),
   updateFood: z.boolean().default(false),
   updateFoodOptions: z.record(z.string(), z.string()).default({}),
+  updateFoodDefaultOption: z.boolean().default(false),
+  updateFoodDefaultOptionValue: z.string().default(''),
   validation: promptValidationWithLimits,
 });
 

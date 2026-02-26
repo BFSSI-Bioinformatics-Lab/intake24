@@ -132,11 +132,16 @@ function selectedSubsetKey() {
   return selectedIndexes.join('|');
 }
 
+// TODO: Move to handler
 async function customAction() {
   if (updateFoodEnabled.value) {
     const foodId = props.food?.id;
     const subsetKey = selectedSubsetKey();
-    const foodCode = (props.prompt.updateFoodOptions?.[subsetKey] ?? '').trim();
+    const subsetCode = (props.prompt.updateFoodOptions?.[subsetKey] ?? '').trim();
+    const defaultCode = props.prompt.updateFoodDefaultOption
+      ? (props.prompt.updateFoodDefaultOptionValue ?? '').trim()
+      : '';
+    const foodCode = subsetCode || defaultCode;
 
     if (foodId && foodCode && (foodCode !== 'NO_UPDATE')) {
       try {
