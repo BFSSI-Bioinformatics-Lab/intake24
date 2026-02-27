@@ -89,7 +89,7 @@ const otherValue = ref('');
 const otherOutput = computed(() => otherValue.value.length ? `Other: ${otherValue.value}` : '');
 const otherRules = computed(() => [inputTooLog(256)]);
 
-const selected = ref(Array.isArray(props.modelValue) ? props.modelValue : []);
+const selected = ref<string[]>(Array.isArray(props.modelValue) ? props.modelValue : []);
 const state = computed(() => [...selected.value, otherOutput.value].filter(Boolean));
 
 const localeOptions = computed(
@@ -129,10 +129,10 @@ function update(option?: ListOption) {
 }
 
 function selectedSubsetKey() {
-  const selectedIndexes = [...new Set(selected.value)]
+  const selectedIndexes: number[] = [...new Set(selected.value)]
     .map(value => localeOptions.value.findIndex(option => option.value === value))
     .filter(index => index >= 0)
-    .sort((left, right) => left - right);
+    .sort((left: number, right: number) => left - right);
 
   return selectedIndexes.join('|');
 }
