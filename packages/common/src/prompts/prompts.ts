@@ -188,9 +188,9 @@ const checkboxListPrompt = z.object({
   options: localeOptionList({ limit: 2048 }),
   other: z.boolean(),
   updateFood: z.boolean().default(false),
-  updateFoodOptions: z.record(z.string(), z.string()).default({}),
-  updateFoodDefaultOption: z.boolean().default(false),
-  updateFoodDefaultOptionValue: z.string().default(''),
+  updateFoodOptions: z.record(z.string(), z.record(z.string(), z.string())).default({}),
+  updateFoodDefaultOption: z.record(z.string(), z.boolean()).default({}),
+  updateFoodDefaultOptionValue: z.record(z.string(), z.string()).default({}),
   validation: promptValidationWithLimits,
 });
 

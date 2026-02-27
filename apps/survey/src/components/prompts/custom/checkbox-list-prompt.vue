@@ -95,6 +95,15 @@ const state = computed(() => [...selected.value, otherOutput.value].filter(Boole
 const localeOptions = computed(
   () => props.prompt.options[locale.value] ?? props.prompt.options.en,
 );
+const localeUpdateFoodOptions = computed<Record<string, string>>(() => {
+  return props.prompt.updateFoodOptions[locale.value] ?? props.prompt.updateFoodOptions.en ?? {};
+});
+const localeUpdateFoodDefaultOption = computed<boolean>(() => {
+  return props.prompt.updateFoodDefaultOption[locale.value] ?? props.prompt.updateFoodDefaultOption.en ?? false;
+});
+const localeUpdateFoodDefaultOptionValue = computed<string>(() => {
+  return props.prompt.updateFoodDefaultOptionValue[locale.value] ?? props.prompt.updateFoodDefaultOptionValue.en ?? '';
+});
 const updateFoodEnabled = computed(() => !!props.prompt.updateFood);
 const isExclusiveSelected = computed(() => !!localeOptions.value.find(option => option.exclusive && props.modelValue.includes(option.value)));
 const isMinSatisfied = computed(() => !props.prompt.validation.min || props.modelValue.length >= props.prompt.validation.min);
@@ -120,12 +129,8 @@ function update(option?: ListOption) {
 }
 
 function selectedSubsetKey() {
-  const options = props.prompt.options.en?.length
-    ? props.prompt.options.en
-    : localeOptions.value;
-
   const selectedIndexes = [...new Set(selected.value)]
-    .map(value => options.findIndex(option => option.value === value))
+    .map(value => localeOptions.value.findIndex(option => option.value === value))
     .filter(index => index >= 0)
     .sort((left, right) => left - right);
 
@@ -137,9 +142,9 @@ async function customAction() {
   if (updateFoodEnabled.value) {
     const foodId = props.food?.id;
     const subsetKey = selectedSubsetKey();
-    const subsetCode = (props.prompt.updateFoodOptions?.[subsetKey] ?? '').trim();
-    const defaultCode = props.prompt.updateFoodDefaultOption
-      ? (props.prompt.updateFoodDefaultOptionValue ?? '').trim()
+    const subsetCode = (localeUpdateFoodOptions.value[subsetKey] ?? '').trim();
+    const defaultCode = localeUpdateFoodDefaultOption.value
+      ? localeUpdateFoodDefaultOptionValue.value.trim()
       : '';
     const foodCode = subsetCode || defaultCode;
 

@@ -35,46 +35,46 @@
           :options="options[lang]"
           @update:options="updateLanguage('options', lang, $event)"
         />
+
+        <v-row v-if="showUpdateFoodConfig" class="mt-3">
+          <v-col cols="12">
+            <v-alert type="info" variant="tonal">
+              {{ $t('survey-schemes.prompts.checkbox-list-prompt.updateFoodOptions') }}
+            </v-alert>
+          </v-col>
+          <v-col cols="12">
+            <v-switch
+              hide-details="auto"
+              :label="$t('survey-schemes.prompts.checkbox-list-prompt.updateFoodDefaultOptionSwitch')"
+              :model-value="localizedUpdateFoodDefaultOption[lang] ?? false"
+              @update:model-value="updateDefaultOptionSwitch(lang, !!$event)"
+            />
+          </v-col>
+          <v-col v-if="localizedUpdateFoodDefaultOption[lang]" cols="12">
+            <v-text-field
+              hide-details="auto"
+              :label="$t('survey-schemes.prompts.checkbox-list-prompt.updateFoodDefaultOptionField')"
+              :model-value="localizedUpdateFoodDefaultOptionValue[lang] ?? ''"
+              variant="outlined"
+              @update:model-value="updateDefaultOptionValue(lang, $event)"
+            />
+          </v-col>
+          <v-col
+            v-for="subset in optionSubsetsByLanguage[lang] ?? []"
+            :key="`${lang}-${subset.key}`"
+            cols="12"
+          >
+            <v-text-field
+              hide-details="auto"
+              :label="`${subset.label}`"
+              :model-value="localizedUpdateFoodOptions[lang]?.[subset.key] ?? ''"
+              variant="outlined"
+              @update:model-value="updateSubsetCode(lang, subset.key, $event)"
+            />
+          </v-col>
+        </v-row>
       </template>
     </language-selector>
-
-    <v-row v-if="showUpdateFoodConfig" class="mt-3">
-      <v-col cols="12">
-        <v-alert type="info" variant="tonal">
-          {{ $t('survey-schemes.prompts.checkbox-list-prompt.updateFoodOptions') }}
-        </v-alert>
-      </v-col>
-      <v-col cols="12">
-        <v-switch
-          hide-details="auto"
-          :label="$t('survey-schemes.prompts.checkbox-list-prompt.updateFoodDefaultOptionSwitch')"
-          :model-value="updateFoodDefaultOption"
-          @update:model-value="update('updateFoodDefaultOption', $event)"
-        />
-      </v-col>
-      <v-col v-if="updateFoodDefaultOption" cols="12">
-        <v-text-field
-          hide-details="auto"
-          :label="$t('survey-schemes.prompts.checkbox-list-prompt.updateFoodDefaultOptionField')"
-          :model-value="updateFoodDefaultOptionValue"
-          variant="outlined"
-          @update:model-value="update('updateFoodDefaultOptionValue', $event)"
-        />
-      </v-col>
-      <v-col
-        v-for="subset in optionSubsets"
-        :key="subset.key"
-        cols="12"
-      >
-        <v-text-field
-          hide-details="auto"
-          :label="`${subset.label}`"
-          :model-value="updateFoodOptions[subset.key] ?? ''"
-          variant="outlined"
-          @update:model-value="updateSubsetCode(subset.key, $event)"
-        />
-      </v-col>
-    </v-row>
   </v-tabs-window-item>
 </template>
 
@@ -104,11 +104,11 @@ export default defineComponent({
       required: true,
     },
     updateFoodDefaultOption: {
-      type: Boolean as PropType<Prompts['checkbox-list-prompt']['updateFoodDefaultOption']>,
+      type: Object as PropType<Prompts['checkbox-list-prompt']['updateFoodDefaultOption']>,
       required: true,
     },
     updateFoodDefaultOptionValue: {
-      type: String as PropType<Prompts['checkbox-list-prompt']['updateFoodDefaultOptionValue']>,
+      type: Object as PropType<Prompts['checkbox-list-prompt']['updateFoodDefaultOptionValue']>,
       required: true,
     },
     validation: {
@@ -134,39 +134,48 @@ export default defineComponent({
     showUpdateFoodConfig(): boolean {
       return this.updateFood && this.canUseUpdateFood;
     },
-    baseOptions(): ListOption[] {
-      if (this.options.en?.length)
-        return this.options.en;
+    localizedUpdateFoodOptions(): Record<string, Record<string, string>> {
+      const next: Record<string, Record<string, string>> = {};
 
-      const firstLang = Object.keys(this.options)[0];
-      return firstLang ? this.options[firstLang] : [];
-    },
-    optionSubsets(): { key: string; label: string }[] {
-      const options = this.baseOptions;
-      const subsets: { key: string; label: string }[] = [];
+      for (const [key, value] of Object.entries(this.updateFoodOptions ?? {})) {
+        if (value && typeof value === 'object') {
+          next[key] = Object.entries(value).reduce<Record<string, string>>((acc, [subsetKey, subsetValue]) => {
+            if (typeof subsetValue === 'string')
+              acc[subsetKey] = subsetValue;
 
-      for (let mask = 1; mask < (2 ** options.length); mask++) {
-        const selectedIndexes = [];
-        for (let i = 0; i < options.length; i++) {
-          if ((mask & (1 << i)) !== 0) {
-            selectedIndexes.push(i);
-          }
+            return acc;
+          }, {});
         }
-        const selected = selectedIndexes.map(index => options[index]);
-        const hasExclusive = selected.some(option => option.exclusive);
-
-        if (hasExclusive && selected.length > 1)
-          continue;
-
-        const key = selectedIndexes.join('|');
-        const label = selected.map(option => option.label).join(', ');
-        subsets.push({ key, label });
       }
 
-      return subsets;
+      return next;
+    },
+    localizedUpdateFoodDefaultOption(): Record<string, boolean> {
+      return Object.entries(this.updateFoodDefaultOption ?? {}).reduce<Record<string, boolean>>((acc, [lang, enabled]) => {
+        if (typeof enabled === 'boolean')
+          acc[lang] = enabled;
+
+        return acc;
+      }, {});
+    },
+    localizedUpdateFoodDefaultOptionValue(): Record<string, string> {
+      return Object.entries(this.updateFoodDefaultOptionValue ?? {}).reduce<Record<string, string>>((acc, [lang, value]) => {
+        if (typeof value === 'string')
+          acc[lang] = value;
+
+        return acc;
+      }, {});
+    },
+    optionSubsetsByLanguage(): Record<string, { key: string; label: string }[]> {
+      return Object.entries(this.options).reduce<Record<string, { key: string; label: string }[]>>((acc, [lang, options]) => {
+        acc[lang] = this.optionSubsetsForLanguage(options);
+        return acc;
+      }, {});
     },
     optionSubsetKeysSignature(): string {
-      return this.optionSubsets.map(subset => subset.key).join(',');
+      return Object.entries(this.optionSubsetsByLanguage)
+        .map(([lang, subsets]) => `${lang}:${subsets.map(subset => subset.key).join('|')}`)
+        .join(',');
     },
   },
 
@@ -183,35 +192,119 @@ export default defineComponent({
         this.update('other', false);
     },
     optionSubsetKeysSignature() {
-      this.syncUpdateFoodOptions();
+      this.syncUpdateFoodSettings();
     },
   },
 
   methods: {
-    syncUpdateFoodOptions() {
+    syncUpdateFoodSettings() {
       if (!this.showUpdateFoodConfig)
         return;
 
-      const valid = new Set(this.optionSubsets.map(subset => subset.key));
-      const next = Object.entries(this.updateFoodOptions).reduce<Record<string, string>>((acc, [key, value]) => {
-        if (valid.has(key))
-          acc[key] = value;
+      const validByLanguage = Object.entries(this.optionSubsetsByLanguage).reduce<Record<string, Set<string>>>((acc, [lang, subsets]) => {
+        acc[lang] = new Set(subsets.map(subset => subset.key));
+        return acc;
+      }, {});
+
+      const next = Object.entries(this.localizedUpdateFoodOptions).reduce<Record<string, Record<string, string>>>((acc, [lang, mappings]) => {
+        const valid = validByLanguage[lang];
+        if (!valid)
+          return acc;
+
+        const filtered = Object.entries(mappings).reduce<Record<string, string>>((subsetAcc, [subsetKey, subsetValue]) => {
+          if (valid.has(subsetKey))
+            subsetAcc[subsetKey] = subsetValue;
+
+          return subsetAcc;
+        }, {});
+
+        acc[lang] = filtered;
+        return acc;
+      }, {});
+
+      const current = this.localizedUpdateFoodOptions;
+      const currentEntries = Object.entries(current);
+      const hasSameEntries = currentEntries.length === Object.keys(next).length
+        && currentEntries.every(([lang, mappings]) => {
+          const nextMappings = next[lang] ?? {};
+          const mappingEntries = Object.entries(mappings);
+
+          return mappingEntries.length === Object.keys(nextMappings).length
+            && mappingEntries.every(([subsetKey, subsetValue]) => nextMappings[subsetKey] === subsetValue);
+        });
+
+      if (!hasSameEntries)
+        this.update('updateFoodOptions', next);
+
+      const validLanguages = new Set(Object.keys(this.options));
+      const nextDefaultOption = Object.entries(this.localizedUpdateFoodDefaultOption).reduce<Record<string, boolean>>((acc, [lang, enabled]) => {
+        if (validLanguages.has(lang))
+          acc[lang] = enabled;
+
+        return acc;
+      }, {});
+      const nextDefaultOptionValue = Object.entries(this.localizedUpdateFoodDefaultOptionValue).reduce<Record<string, string>>((acc, [lang, value]) => {
+        if (validLanguages.has(lang))
+          acc[lang] = value;
 
         return acc;
       }, {});
 
-      const currentEntries = Object.entries(this.updateFoodOptions);
-      const hasSameEntries = currentEntries.length === Object.keys(next).length
-        && currentEntries.every(([key, value]) => next[key] === value);
+      const hasSameDefaultOption = Object.entries(this.localizedUpdateFoodDefaultOption).length === Object.keys(nextDefaultOption).length
+        && Object.entries(this.localizedUpdateFoodDefaultOption).every(([lang, enabled]) => nextDefaultOption[lang] === enabled);
+      const hasSameDefaultValue = Object.entries(this.localizedUpdateFoodDefaultOptionValue).length === Object.keys(nextDefaultOptionValue).length
+        && Object.entries(this.localizedUpdateFoodDefaultOptionValue).every(([lang, value]) => nextDefaultOptionValue[lang] === value);
 
-      if (!hasSameEntries)
-        this.update('updateFoodOptions', next);
+      if (!hasSameDefaultOption)
+        this.update('updateFoodDefaultOption', nextDefaultOption);
+
+      if (!hasSameDefaultValue)
+        this.update('updateFoodDefaultOptionValue', nextDefaultOptionValue);
     },
-    updateSubsetCode(key: string, value: string) {
+    updateSubsetCode(lang: string, key: string, value: string) {
       this.update('updateFoodOptions', {
-        ...this.updateFoodOptions,
-        [key]: value,
+        ...this.localizedUpdateFoodOptions,
+        [lang]: {
+          ...(this.localizedUpdateFoodOptions[lang] ?? {}),
+          [key]: value,
+        },
       });
+    },
+    updateDefaultOptionSwitch(lang: string, value: boolean | null) {
+      this.update('updateFoodDefaultOption', {
+        ...this.localizedUpdateFoodDefaultOption,
+        [lang]: !!value,
+      });
+    },
+    updateDefaultOptionValue(lang: string, value: string) {
+      this.update('updateFoodDefaultOptionValue', {
+        ...this.localizedUpdateFoodDefaultOptionValue,
+        [lang]: value,
+      });
+    },
+    optionSubsetsForLanguage(options: ListOption[]): { key: string; label: string }[] {
+      const subsets: { key: string; label: string }[] = [];
+
+      for (let mask = 1; mask < (2 ** options.length); mask++) {
+        const selectedIndexes = [];
+        for (let i = 0; i < options.length; i++) {
+          if ((mask & (1 << i)) !== 0)
+            selectedIndexes.push(i);
+        }
+
+        const selected = selectedIndexes.map(index => options[index]);
+        const hasExclusive = selected.some(option => option.exclusive);
+
+        if (hasExclusive && selected.length > 1)
+          continue;
+
+        subsets.push({
+          key: selectedIndexes.join('|'),
+          label: selected.map(option => option.label).join(', '),
+        });
+      }
+
+      return subsets;
     },
   },
 });
