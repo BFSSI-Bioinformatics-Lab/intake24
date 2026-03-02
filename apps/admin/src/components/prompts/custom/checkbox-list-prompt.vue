@@ -121,6 +121,13 @@ export default defineComponent({
     },
   },
 
+  data() {
+    return {
+      optionSubsetsByLanguageCache: {} as Record<string, { key: string; label: string }[]>,
+      optionsRefreshTimeout: null as ReturnType<typeof setTimeout> | null,
+    };
+  },
+
   computed: {
     validationRequired(): boolean {
       return this.validation.required;
@@ -167,15 +174,7 @@ export default defineComponent({
       }, {});
     },
     optionSubsetsByLanguage(): Record<string, { key: string; label: string }[]> {
-      return Object.entries(this.options).reduce<Record<string, { key: string; label: string }[]>>((acc, [lang, options]) => {
-        acc[lang] = this.optionSubsetsForLanguage(options);
-        return acc;
-      }, {});
-    },
-    optionSubsetKeysSignature(): string {
-      return Object.entries(this.optionSubsetsByLanguage)
-        .map(([lang, subsets]) => `${lang}:${subsets.map(subset => subset.key).join('|')}`)
-        .join(',');
+      return this.optionSubsetsByLanguageCache;
     },
   },
 
@@ -191,12 +190,29 @@ export default defineComponent({
       if (value)
         this.update('other', false);
     },
-    optionSubsetKeysSignature() {
-      this.syncUpdateFoodSettings();
+    options: {
+      immediate: true,
+      deep: true,
+      handler() {
+        this.scheduleOptionsRefresh();
+      },
     },
   },
 
+  beforeUnmount() {
+    if (this.optionsRefreshTimeout) {
+      clearTimeout(this.optionsRefreshTimeout);
+      this.optionsRefreshTimeout = null;
+    }
+  },
+
   methods: {
+    rebuildOptionSubsets() {
+      this.optionSubsetsByLanguageCache = Object.entries(this.options).reduce<Record<string, { key: string; label: string }[]>>((acc, [lang, options]) => {
+        acc[lang] = this.optionSubsetsForLanguage(options);
+        return acc;
+      }, {});
+    },
     syncUpdateFoodSettings() {
       if (!this.showUpdateFoodConfig)
         return;
@@ -260,6 +276,16 @@ export default defineComponent({
 
       if (!hasSameDefaultValue)
         this.update('updateFoodDefaultOptionValue', nextDefaultOptionValue);
+    },
+    scheduleOptionsRefresh() {
+      if (this.optionsRefreshTimeout)
+        clearTimeout(this.optionsRefreshTimeout);
+
+      this.optionsRefreshTimeout = setTimeout(() => {
+        this.rebuildOptionSubsets();
+        this.syncUpdateFoodSettings();
+        this.optionsRefreshTimeout = null;
+      }, 500);
     },
     updateSubsetCode(lang: string, key: string, value: string) {
       this.update('updateFoodOptions', {
