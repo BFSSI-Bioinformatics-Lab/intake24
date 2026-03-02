@@ -237,20 +237,7 @@ export default defineComponent({
         acc[lang] = filtered;
         return acc;
       }, {});
-
-      const current = this.localizedUpdateFoodOptions;
-      const currentEntries = Object.entries(current);
-      const hasSameEntries = currentEntries.length === Object.keys(next).length
-        && currentEntries.every(([lang, mappings]) => {
-          const nextMappings = next[lang] ?? {};
-          const mappingEntries = Object.entries(mappings);
-
-          return mappingEntries.length === Object.keys(nextMappings).length
-            && mappingEntries.every(([subsetKey, subsetValue]) => nextMappings[subsetKey] === subsetValue);
-        });
-
-      if (!hasSameEntries)
-        this.update('updateFoodOptions', next);
+      this.update('updateFoodOptions', next);
 
       const validLanguages = new Set(Object.keys(this.options));
       const nextDefaultOption = Object.entries(this.localizedUpdateFoodDefaultOption).reduce<Record<string, boolean>>((acc, [lang, enabled]) => {
@@ -266,16 +253,8 @@ export default defineComponent({
         return acc;
       }, {});
 
-      const hasSameDefaultOption = Object.entries(this.localizedUpdateFoodDefaultOption).length === Object.keys(nextDefaultOption).length
-        && Object.entries(this.localizedUpdateFoodDefaultOption).every(([lang, enabled]) => nextDefaultOption[lang] === enabled);
-      const hasSameDefaultValue = Object.entries(this.localizedUpdateFoodDefaultOptionValue).length === Object.keys(nextDefaultOptionValue).length
-        && Object.entries(this.localizedUpdateFoodDefaultOptionValue).every(([lang, value]) => nextDefaultOptionValue[lang] === value);
-
-      if (!hasSameDefaultOption)
-        this.update('updateFoodDefaultOption', nextDefaultOption);
-
-      if (!hasSameDefaultValue)
-        this.update('updateFoodDefaultOptionValue', nextDefaultOptionValue);
+      this.update('updateFoodDefaultOption', nextDefaultOption);
+      this.update('updateFoodDefaultOptionValue', nextDefaultOptionValue);
     },
     scheduleOptionsRefresh() {
       if (this.optionsRefreshTimeout)
