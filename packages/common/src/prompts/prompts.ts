@@ -260,9 +260,13 @@ const timePickerPrompt = z.object({
 
 const yesNoPrompt = z.object({
   ...baseCustomPrompt.shape,
+  ...validatedPrompt.shape,
   component: z.literal('yes-no-prompt'),
   useFlag: z.boolean(),
   flag: z.string().optional(),
+  updateFood: z.boolean().default(false),
+  updateFoodYes: z.string().default(''),
+  updateFoodNo: z.string().default(''),
 });
 
 // Portion size
