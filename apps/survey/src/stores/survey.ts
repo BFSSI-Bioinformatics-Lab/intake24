@@ -41,7 +41,7 @@ import {
 } from '@intake24/survey/util';
 import { useApp, useLoading } from '@intake24/ui/stores';
 
-import { surveyService } from '../services';
+import { foodsService, surveyService } from '../services';
 import { getOrCreatePromptStateStore, promptStores } from './prompt';
 import { useSameAsBefore } from './same-as-before';
 
@@ -75,6 +75,11 @@ export interface MealFoodIndex {
 export interface FoodIndex {
   foodIndex: number;
   linkedFoodIndex: number | undefined;
+}
+
+interface FoodRef {
+  collection: FoodState[];
+  index: number;
 }
 
 export function createMeal(data: MealCreationState, flow: RecallFlow = '2-pass'): MealState {
@@ -129,6 +134,23 @@ function canUseUserSession(state: CurrentSurveyState, settings?: SessionSettings
     return false;
 
   return true;
+}
+
+function collectFoodRefs(foods: FoodState[], refs: FoodRef[] = []): FoodRef[] {
+  foods.forEach((food, index) => {
+    refs.push({ collection: foods, index });
+
+    if (food.linkedFoods.length)
+      collectFoodRefs(food.linkedFoods, refs);
+  });
+
+  return refs;
+}
+
+function toDeferredUpdateCode(value?: string | null) {
+  const code = value?.trim();
+
+  return code && code !== 'NO_UPDATE' ? code : null;
 }
 
 export const useSurvey = defineStore('survey', {
@@ -458,8 +480,10 @@ export const useSurvey = defineStore('survey', {
       if (typeof recallDate === 'number')
         this.setRecallDate(addDays(new Date(), recallDate).toISOString().substring(0, 10));
 
+      const submissionState = await this.prepareSubmission();
+
       try {
-        const { submission, ...rest } = await surveyService.submit(this.parameters.slug, this.data);
+        const { submission, ...rest } = await surveyService.submit(this.parameters.slug, submissionState);
         this.setUserInfo(rest);
         this.data.id = submission.id;
         this.data.submissionTime = submission.submissionTime;
@@ -797,6 +821,56 @@ export const useSurvey = defineStore('survey', {
     }) {
       const foodState = findFood(this.meals, data.foodId);
       this.replaceFood({ foodId: data.foodId, food: { ...foodState, ...data.update } });
+    },
+
+    setDeferredFoodCode(data: { foodId: string; code: string | null | undefined }) {
+      const food = findFood(this.meals, data.foodId);
+      const code = toDeferredUpdateCode(data.code);
+
+      if (code)
+        food.deferredUpdateFoodCode = code;
+      else
+        delete food.deferredUpdateFoodCode;
+    },
+
+    async prepareSubmission(): Promise<CurrentSurveyState> {
+      const submission = copy(this.data);
+      const refs = submission.meals.flatMap(meal => collectFoodRefs(meal.foods));
+      const foodDataByCode = new Map<string, EncodedFood['data']>();
+
+      for (const { collection, index } of refs) {
+        const food = collection[index];
+        const deferredCode = toDeferredUpdateCode(food.deferredUpdateFoodCode);
+
+        delete food.deferredUpdateFoodCode;
+
+        if (!deferredCode)
+          continue;
+
+        if (!foodDataByCode.has(deferredCode)) {
+          const foodData = await foodsService.getData(this.localeId, deferredCode);
+          foodDataByCode.set(deferredCode, foodData);
+        }
+
+        const data = foodDataByCode.get(deferredCode);
+        if (!data)
+          continue;
+
+        collection[index] = {
+          id: food.id,
+          type: 'encoded-food',
+          data,
+          searchTerm: food.type === 'free-text' ? food.description : food.searchTerm,
+          portionSizeMethodIndex: food.type === 'encoded-food' ? food.portionSizeMethodIndex : null,
+          portionSize: food.type === 'encoded-food' ? food.portionSize : null,
+          customPromptAnswers: food.customPromptAnswers,
+          flags: food.flags,
+          linkedFoods: food.linkedFoods,
+          external: food.external,
+        };
+      }
+
+      return submission;
     },
 
     addLinkedFoods(foodId: string, linkedFoods: FoodState[]) {

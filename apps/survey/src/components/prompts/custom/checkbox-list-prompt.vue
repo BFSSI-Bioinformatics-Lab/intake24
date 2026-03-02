@@ -50,13 +50,11 @@
 <script lang="ts" setup>
 import type { PropType } from 'vue';
 
-import type { EncodedFood } from '@intake24/common/surveys';
 import type { ListOption } from '@intake24/common/types';
 
 import { computed, ref, watch } from 'vue';
 
 import { usePromptUtils } from '@intake24/survey/composables';
-import { foodsService } from '@intake24/survey/services';
 import { useSurvey } from '@intake24/survey/stores';
 import { useI18n } from '@intake24/ui';
 
@@ -138,9 +136,9 @@ function selectedSubsetKey() {
 }
 
 // TODO: Move to handler
-async function customAction() {
-  if (updateFoodEnabled.value) {
-    const foodId = props.food?.id;
+function customAction() {
+  const foodId = props.food?.id;
+  if (foodId && updateFoodEnabled.value) {
     const subsetKey = selectedSubsetKey();
     const subsetCode = (localeUpdateFoodOptions.value[subsetKey] ?? '').trim();
     const defaultCode = localeUpdateFoodDefaultOption.value
@@ -148,27 +146,7 @@ async function customAction() {
       : '';
     const foodCode = subsetCode || defaultCode;
 
-    if (foodId && foodCode && (foodCode !== 'NO_UPDATE')) {
-      try {
-        const foodData = await foodsService.getData(survey.localeId, foodCode);
-        const newFood: EncodedFood = {
-          id: foodId,
-          type: 'encoded-food',
-          data: foodData,
-          searchTerm: props.food?.searchTerm ?? '',
-          portionSizeMethodIndex: null,
-          portionSize: null,
-          customPromptAnswers: props.food?.customPromptAnswers ?? {},
-          flags: props.food?.flags ?? [],
-          linkedFoods: [],
-        };
-
-        survey.replaceFood({ foodId, food: newFood });
-      }
-      catch (error) {
-        console.error('CheckboxListPrompt failed to replace food:', error);
-      }
-    }
+    survey.setDeferredFoodCode({ foodId, code: foodCode });
   }
 
   action('next');

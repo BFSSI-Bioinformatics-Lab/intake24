@@ -44,12 +44,9 @@
 <script lang="ts" setup>
 import type { PropType } from 'vue';
 
-import type { EncodedFood } from '@intake24/common/surveys';
-
 import { computed, ref } from 'vue';
 
 import { usePromptUtils } from '@intake24/survey/composables';
-import { foodsService } from '@intake24/survey/services';
 import { useSurvey } from '@intake24/survey/stores';
 import { useI18n } from '@intake24/ui';
 
@@ -96,33 +93,11 @@ function update() {
 }
 
 // TODO: Move this to a handler
-async function customAction() {
-  if (props.prompt.updateFood) {
-    const foodId = props.food?.id;
+function customAction() {
+  const foodId = props.food?.id;
+  if (foodId && props.prompt.updateFood) {
     const opt = localeOptions.value.find(o => o.value === selected.value);
-    const foodCode = opt?.updateFoodValue?.trim();
-
-    if (foodId && foodCode && foodCode !== 'NO_UPDATE') {
-      try {
-        const foodData = await foodsService.getData(survey.localeId, foodCode);
-        const newFood: EncodedFood = {
-          id: foodId,
-          type: 'encoded-food',
-          data: foodData,
-          searchTerm: props.food?.searchTerm ?? '',
-          portionSizeMethodIndex: null,
-          portionSize: null,
-          customPromptAnswers: props.food?.customPromptAnswers ?? {},
-          flags: props.food?.flags ?? [],
-          linkedFoods: [],
-        };
-
-        survey.replaceFood({ foodId, food: newFood });
-      }
-      catch (error) {
-        console.error('RadioListPrompt failed to replace food:', error);
-      }
-    }
+    survey.setDeferredFoodCode({ foodId, code: opt?.updateFoodValue });
   }
 
   action('next');

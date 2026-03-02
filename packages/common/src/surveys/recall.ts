@@ -89,6 +89,7 @@ export interface AbstractFoodState {
   flags: FoodFlag[];
   linkedFoods: FoodState[];
   customPromptAnswers: CustomData;
+  deferredUpdateFoodCode?: string | null;
   type: FoodType;
   external?: ExternalSourceRecord;
 }
