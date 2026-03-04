@@ -169,6 +169,10 @@ const checkboxListPrompt = z.object({
   component: z.literal('checkbox-list-prompt'),
   options: localeOptionList(),
   other: z.boolean(),
+  updateFood: z.boolean().default(false),
+  updateFoodOptions: z.record(z.string(), z.record(z.string(), z.string())).default({}),
+  updateFoodDefaultOption: z.record(z.string(), z.boolean()).default({}),
+  updateFoodDefaultOptionValue: z.record(z.string(), z.string()).default({}),
   validation: promptValidationWithLimits,
 });
 
