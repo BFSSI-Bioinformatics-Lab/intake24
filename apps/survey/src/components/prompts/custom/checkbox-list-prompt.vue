@@ -134,7 +134,11 @@ function selectedSubsetKey() {
     .filter(index => index >= 0)
     .sort((left: number, right: number) => left - right);
 
-  return selectedIndexes.join('|');
+  const selectedIds: number[] = selectedIndexes
+    .map(index => localeOptions.value[index]?.id ?? index)
+    .sort((left: number, right: number) => left - right);
+
+  return selectedIds.join(', ');
 }
 
 // TODO: Move to handler

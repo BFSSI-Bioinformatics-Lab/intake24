@@ -38,6 +38,14 @@
 
         <v-row v-if="showUpdateFoodConfig" class="mt-3">
           <v-col cols="12">
+            <v-btn
+              class="my-4 ignore-item"
+              color="primary"
+              :disabled="!subsetsStale"
+              @click="handleClick"
+            >
+              {{ $t('survey-schemes.prompts.checkbox-list-prompt.refreshSubsets') }}
+            </v-btn>
             <v-alert type="info" variant="tonal">
               {{ $t('survey-schemes.prompts.checkbox-list-prompt.updateFoodOptions') }}
             </v-alert>
@@ -46,30 +54,31 @@
             <v-switch
               hide-details="auto"
               :label="$t('survey-schemes.prompts.checkbox-list-prompt.updateFoodDefaultOptionSwitch')"
-              :model-value="localizedUpdateFoodDefaultOption[lang] ?? false"
-              @update:model-value="updateDefaultOptionSwitch(lang, !!$event)"
+              :model-value="updateFoodDefaultOption[lang] ?? false"
+              @update:model-value="updateLanguage('updateFoodDefaultOption', lang, $event)"
             />
           </v-col>
-          <v-col v-if="localizedUpdateFoodDefaultOption[lang]" cols="12">
+          <v-col v-if="updateFoodDefaultOption[lang]" cols="12">
             <v-text-field
               hide-details="auto"
               :label="$t('survey-schemes.prompts.checkbox-list-prompt.updateFoodDefaultOptionField')"
-              :model-value="localizedUpdateFoodDefaultOptionValue[lang] ?? ''"
+              :model-value="updateFoodDefaultOptionValue[lang] ?? ''"
               variant="outlined"
               @update:model-value="updateDefaultOptionValue(lang, $event)"
             />
           </v-col>
           <v-col
-            v-for="subset in optionSubsetsByLanguage[lang] ?? []"
-            :key="`${lang}-${subset.key}`"
+            v-for="[key, value] in Object.entries(currentUpdateFoodOptions[lang] ?? {})"
+            :key="`${lang}-${key}`"
             cols="12"
           >
             <v-text-field
+              :disabled="subsetsStale"
               hide-details="auto"
-              :label="`${subset.label}`"
-              :model-value="subsetCodeValue(lang, subset)"
+              :label="`${value.label}`"
+              :model-value="value.foodcode"
               variant="outlined"
-              @update:model-value="updateSubsetCode(lang, subset, $event)"
+              @update:model-value="updateCurrentFoodCode(lang, key, $event)"
             />
           </v-col>
         </v-row>
@@ -123,8 +132,9 @@ export default defineComponent({
 
   data() {
     return {
-      optionSubsetsByLanguageCache: {} as Record<string, { key: string; label: string; legacyKey: string }[]>,
-      optionsRefreshTimeout: null as ReturnType<typeof setTimeout> | null,
+      hasInitializedUpdateFoodOptions: false,
+      subsetsStale: false,
+      currentUpdateFoodOptions: {} as Record<string, Record<string, { label: string; foodcode: string }>>,
     };
   },
 
@@ -141,40 +151,20 @@ export default defineComponent({
     showUpdateFoodConfig(): boolean {
       return this.updateFood && this.canUseUpdateFood;
     },
-    localizedUpdateFoodOptions(): Record<string, Record<string, string>> {
-      const next: Record<string, Record<string, string>> = {};
-
-      for (const [key, value] of Object.entries(this.updateFoodOptions ?? {})) {
-        if (value && typeof value === 'object') {
-          next[key] = Object.entries(value).reduce<Record<string, string>>((acc, [subsetKey, subsetValue]) => {
-            if (typeof subsetValue === 'string')
-              acc[subsetKey] = subsetValue;
-
-            return acc;
-          }, {});
-        }
-      }
-
-      return next;
-    },
-    localizedUpdateFoodDefaultOption(): Record<string, boolean> {
-      return Object.entries(this.updateFoodDefaultOption ?? {}).reduce<Record<string, boolean>>((acc, [lang, enabled]) => {
-        if (typeof enabled === 'boolean')
-          acc[lang] = enabled;
-
-        return acc;
-      }, {});
-    },
-    localizedUpdateFoodDefaultOptionValue(): Record<string, string> {
-      return Object.entries(this.updateFoodDefaultOptionValue ?? {}).reduce<Record<string, string>>((acc, [lang, value]) => {
-        if (typeof value === 'string')
-          acc[lang] = value;
-
-        return acc;
-      }, {});
-    },
-    optionSubsetsByLanguage(): Record<string, { key: string; label: string; legacyKey: string }[]> {
-      return this.optionSubsetsByLanguageCache;
+    optionsFingerprint(): string {
+      return JSON.stringify(
+        Object.entries(this.options ?? {})
+          .sort(([langA], [langB]) => langA.localeCompare(langB))
+          .map(([lang, options]) => [
+            lang,
+            (options ?? []).map(option => ({
+              id: option.id ?? null,
+              value: option.value ?? null,
+              label: option.label,
+              exclusive: !!option.exclusive,
+            })),
+          ]),
+      );
     },
   },
 
@@ -190,119 +180,85 @@ export default defineComponent({
       if (value)
         this.update('other', false);
     },
-    options: {
+    optionsFingerprint: {
       immediate: true,
+      handler() {
+        if (!this.hasInitializedUpdateFoodOptions) {
+          this.currentUpdateFoodOptions = this.buildCurrentUpdateFoodOptions();
+          this.hasInitializedUpdateFoodOptions = true;
+          this.subsetsStale = false;
+          return;
+        }
+
+        this.subsetsStale = true;
+      },
+    },
+    currentUpdateFoodOptions: {
       deep: true,
       handler() {
-        this.scheduleOptionsRefresh();
+        this.update('updateFoodOptions', Object.fromEntries(
+          Object.entries(this.currentUpdateFoodOptions).map(([lang, inner]) => [
+            lang,
+            Object.fromEntries(
+              Object.entries(inner).map(([subsetKey, v]) => [subsetKey, this.normalizeFoodCode(v.foodcode)]),
+            ),
+          ]),
+        ));
       },
     },
   },
 
-  beforeUnmount() {
-    if (this.optionsRefreshTimeout) {
-      clearTimeout(this.optionsRefreshTimeout);
-      this.optionsRefreshTimeout = null;
-    }
-  },
-
   methods: {
-    rebuildOptionSubsets() {
-      this.optionSubsetsByLanguageCache = Object.entries(this.options).reduce<Record<string, { key: string; label: string; legacyKey: string }[]>>((acc, [lang, options]) => {
-        acc[lang] = this.optionSubsetsForLanguage(options);
-        return acc;
-      }, {});
+    normalizeFoodCode(value: unknown): string {
+      if (typeof value === 'string')
+        return value;
+
+      return '';
     },
-    syncUpdateFoodSettings() {
-      if (!this.showUpdateFoodConfig)
-        return;
+    buildCurrentUpdateFoodOptions() {
+      const next: Record<string, Record<string, { label: string; foodcode: string }>> = {};
 
-      const subsetsByLanguage = this.optionSubsetsByLanguage;
+      for (const [lang, options] of Object.entries(this.options ?? {})) {
+        const subsets = this.updateSubsets(options);
+        const currentByLanguage = this.currentUpdateFoodOptions[lang] ?? {};
+        const existingFromProps = this.updateFoodOptions?.[lang] ?? {};
 
-      const next = Object.entries(subsetsByLanguage).reduce<Record<string, Record<string, string>>>((acc, [lang, subsets]) => {
-        const mappings = this.localizedUpdateFoodOptions[lang] ?? {};
-        const normalized = subsets.reduce<Record<string, string>>((subsetAcc, subset) => {
-          const value = mappings[subset.key] ?? mappings[subset.legacyKey];
-          if (typeof value === 'string')
-            subsetAcc[subset.key] = value;
+        next[lang] = Object.fromEntries(subsets.map(subset => [
+          subset.key,
+          {
+            label: subset.label,
+            foodcode: this.normalizeFoodCode(currentByLanguage[subset.key]?.foodcode)
+              || this.normalizeFoodCode(existingFromProps[subset.key]),
+          },
+        ]));
+      }
 
-          return subsetAcc;
-        }, {});
-
-        acc[lang] = normalized;
-        return acc;
-      }, {});
-      if (!this.isEqual(next, this.localizedUpdateFoodOptions))
-        this.update('updateFoodOptions', next);
-
-      const validLanguages = new Set(Object.keys(this.options));
-      const nextDefaultOption = Object.entries(this.localizedUpdateFoodDefaultOption).reduce<Record<string, boolean>>((acc, [lang, enabled]) => {
-        if (validLanguages.has(lang))
-          acc[lang] = enabled;
-
-        return acc;
-      }, {});
-      const nextDefaultOptionValue = Object.entries(this.localizedUpdateFoodDefaultOptionValue).reduce<Record<string, string>>((acc, [lang, value]) => {
-        if (validLanguages.has(lang))
-          acc[lang] = value;
-
-        return acc;
-      }, {});
-
-      if (!this.isEqual(nextDefaultOption, this.localizedUpdateFoodDefaultOption))
-        this.update('updateFoodDefaultOption', nextDefaultOption);
-
-      if (!this.isEqual(nextDefaultOptionValue, this.localizedUpdateFoodDefaultOptionValue))
-        this.update('updateFoodDefaultOptionValue', nextDefaultOptionValue);
+      return next;
     },
-    scheduleOptionsRefresh() {
-      if (this.optionsRefreshTimeout)
-        clearTimeout(this.optionsRefreshTimeout);
-
-      this.optionsRefreshTimeout = setTimeout(() => {
-        this.rebuildOptionSubsets();
-        this.syncUpdateFoodSettings();
-        this.optionsRefreshTimeout = null;
-      }, 500);
+    handleClick() {
+      this.currentUpdateFoodOptions = this.buildCurrentUpdateFoodOptions();
+      this.subsetsStale = false;
     },
-    updateSubsetCode(lang: string, subset: { key: string; legacyKey: string }, value: string) {
-      const current = { ...(this.localizedUpdateFoodOptions[lang] ?? {}) };
-      delete current[subset.legacyKey];
+    updateDefaultOptionValue(lang: string, value: unknown) {
+      this.updateLanguage('updateFoodDefaultOptionValue', lang, this.normalizeFoodCode(value));
+    },
+    updateCurrentFoodCode(lang: string, subsetKey: string, foodcode: unknown) {
+      const currentByLanguage = this.currentUpdateFoodOptions[lang] ?? {};
+      const currentEntry = currentByLanguage[subsetKey] ?? { label: subsetKey, foodcode: '' };
 
-      this.update('updateFoodOptions', {
-        ...this.localizedUpdateFoodOptions,
+      this.currentUpdateFoodOptions = {
+        ...this.currentUpdateFoodOptions,
         [lang]: {
-          ...current,
-          [subset.key]: value,
+          ...currentByLanguage,
+          [subsetKey]: {
+            ...currentEntry,
+            foodcode: this.normalizeFoodCode(foodcode),
+          },
         },
-      });
+      };
     },
-    subsetCodeValue(lang: string, subset: { key: string; legacyKey: string }): string {
-      return this.localizedUpdateFoodOptions[lang]?.[subset.key]
-        ?? this.localizedUpdateFoodOptions[lang]?.[subset.legacyKey]
-        ?? '';
-    },
-    updateDefaultOptionSwitch(lang: string, value: boolean | null) {
-      const nextValue = !!value;
-      if ((this.localizedUpdateFoodDefaultOption[lang] ?? false) === nextValue)
-        return;
-
-      this.update('updateFoodDefaultOption', {
-        ...this.localizedUpdateFoodDefaultOption,
-        [lang]: nextValue,
-      });
-    },
-    updateDefaultOptionValue(lang: string, value: string) {
-      if ((this.localizedUpdateFoodDefaultOptionValue[lang] ?? '') === value)
-        return;
-
-      this.update('updateFoodDefaultOptionValue', {
-        ...this.localizedUpdateFoodDefaultOptionValue,
-        [lang]: value,
-      });
-    },
-    optionSubsetsForLanguage(options: ListOption[]): { key: string; label: string; legacyKey: string }[] {
-      const subsets: { key: string; label: string; legacyKey: string }[] = [];
+    updateSubsets(options: ListOption[]): { key: string; label: string }[] {
+      const subsets: { key: string; label: string }[] = [];
 
       for (let mask = 1; mask < (2 ** options.length); mask++) {
         const selectedIndexes: number[] = [];
@@ -317,23 +273,17 @@ export default defineComponent({
         if (hasExclusive && selected.length > 1)
           continue;
 
+        const selectedIds = selectedIndexes
+          .map(index => options[index].id ?? index)
+          .sort((left, right) => left - right);
+
         subsets.push({
-          key: JSON.stringify(selected.map(option => this.optionSubsetIdentity(option)).sort()),
-          legacyKey: selectedIndexes.join('|'),
+          key: selectedIds.join(', '),
           label: selected.map(option => option.label).join(', '),
         });
       }
 
       return subsets;
-    },
-    optionSubsetIdentity(option: ListOption): string {
-      if (option.id !== undefined)
-        return `id:${option.id}`;
-
-      return `value:${String(option.value)}`;
-    },
-    isEqual(left: unknown, right: unknown): boolean {
-      return JSON.stringify(left) === JSON.stringify(right);
     },
   },
 });

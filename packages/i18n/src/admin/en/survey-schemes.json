@@ -711,7 +711,8 @@
       "subtitle": "Ask to choose any number of items from a list",
       "updateFoodOptions": "Enter a food code for each set of options. Enter NO_UPDATE to prevent food swap.",
       "updateFoodDefaultOptionSwitch": "Use default food code for blank fields",
-      "updateFoodDefaultOptionField": "Default code to use for blank fields"
+      "updateFoodDefaultOptionField": "Default code to use for blank fields",
+      "refreshSubsets": "Click to refresh Update Food options"
     },
     "radio-list-prompt": {
       "title": "Single choice",

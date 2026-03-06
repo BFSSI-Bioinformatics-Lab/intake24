@@ -702,8 +702,7 @@
       "subtitle": "Demander de choisir une heure"
     },
     "checkbox-list-prompt": {
-      "title": "Choix multiple",
-      "subtitle": "Demander de choisir n'importe quel nombre d'éléments d'une liste"
+      "title": "Choix multiple"
     },
     "radio-list-prompt": {
       "title": "Choix unique",

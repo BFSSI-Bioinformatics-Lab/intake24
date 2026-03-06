@@ -4,6 +4,16 @@ export function toIndexedList<T extends object>(items: T[]): (T & { id: number }
   return items.map((item, idx) => ({ ...item, id: idx }));
 }
 
+export function addMissingIds<T extends { id?: number }>(items: T[]): (T & { id: number })[] {
+  let maxId = items.reduce((acc, item) => {
+    return (typeof item.id === 'number') ? Math.max(acc, item.id) : acc;
+  }, -1);
+
+  return items.map((item) => {
+    return (typeof item.id === 'number') ? { ...item, id: item.id } : { ...item, id: ++maxId };
+  });
+}
+
 export function withIdList<T extends object>(items: T[]): (T & { id: string })[] {
   return items.map(item => copy({ ...item, id: randomString(6) }));
 }
