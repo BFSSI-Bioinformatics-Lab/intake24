@@ -46,34 +46,26 @@
           prepend-icon="$add"
           size="small"
           variant="outlined"
-          @click="addGroup"
+          @click="addSubsection"
         >
-          {{ `${$t('common.action.add')} ${$t('survey-schemes.prompts.internal.group._').toLowerCase()}` }}
+          {{ `${$t('survey-schemes.prompts.subsection.add')}` }}
         </v-btn>
       </div>
 
       <vue-draggable
-        v-model="groupsState"
+        v-model="subsectionsState"
         :animation="300"
-        handle=".prompt-group__handle"
+        handle=".prompt-subsection__handle"
       >
         <div
-          v-for="(group, groupIndex) in groupsState"
-          :key="groupKey(groupIndex)"
-          class="prompt-group mb-3"
+          v-for="(subsection, subsectionIndex) in subsectionsState"
+          :key="subsectionKey(subsectionIndex)"
+          class="prompt-subsection mb-3"
         >
-          <div class="prompt-group__title d-flex align-center px-3 py-2">
-            <v-avatar class="prompt-group__handle drag-and-drop__handle mr-3" icon="$handle" size="26" />
-            <v-text-field
-              v-if="!isOverrideMode"
-              v-model="group.name"
-              class="prompt-group__name mr-2"
-              density="compact"
-              hide-details
-              variant="underlined"
-            />
-            <span v-else class="text-subtitle-2 font-weight-medium">
-              {{ group.name }}
+          <div class="prompt-subsection__title d-flex align-center px-3 py-2">
+            <v-avatar class="prompt-subsection__handle drag-and-drop__handle mr-3" icon="$handle" size="26" />
+            <span class="text-subtitle-2 font-weight-medium prompt-subsection__name mr-2">
+              {{ subsection.name }}
             </span>
             <v-spacer />
             <v-btn
@@ -82,50 +74,82 @@
               icon="$add"
               size="x-small"
               :title="$t('survey-schemes.prompts.create')"
-              @click.stop="create(groupIndex)"
+              @click.stop="create(subsectionIndex)"
             />
+            <options-menu v-if="!isOverrideMode">
+              <template #activator="{ props: menuProps }">
+                <v-btn
+                  class="ms-2"
+                  color="primary"
+                  icon="$options"
+                  size="x-small"
+                  v-bind="menuProps"
+                />
+              </template>
+              <confirm-dialog
+                color="info"
+                :label="$t('survey-schemes.prompts.subsection.rename')"
+                max-width="450px"
+                @close="clearRenameSubsection"
+                @confirm="renameSubsection(subsectionIndex)"
+              >
+                <template #activator="{ props: dialogProps }">
+                  <v-list-item link v-bind="dialogProps" @click="startRenameSubsection(subsectionIndex)">
+                    <v-list-item-title>
+                      <v-icon icon="$edit" start />
+                      {{ `${$t('survey-schemes.prompts.subsection.rename')}` }}
+                    </v-list-item-title>
+                  </v-list-item>
+                </template>
+                <v-text-field
+                  v-model="subsectionNameDraft"
+                  :label="$t('common.name')"
+                  variant="outlined"
+                />
+              </confirm-dialog>
+            </options-menu>
             <v-btn
-              v-if="!isOverrideMode && !group.prompts.length"
+              v-if="!isOverrideMode && !subsection.prompts.length"
               color="error"
               icon="$delete"
               size="x-small"
               variant="text"
-              @click.stop="removeGroup(groupIndex)"
+              @click.stop="removeSubsection(subsectionIndex)"
             />
             <v-btn
               color="secondary"
-              :icon="group.expanded ? '$expand' : '$collapse'"
+              :icon="subsection.expanded ? '$expand' : '$collapse'"
               size="x-small"
               variant="text"
-              @click.stop="toggleGroup(groupIndex)"
+              @click.stop="toggleSubsectionExpand(subsectionIndex)"
             />
           </div>
 
           <v-expand-transition>
-            <div v-show="group.expanded">
+            <div v-show="subsection.expanded">
               <v-list class="list-border" lines="two">
                 <vue-draggable
-                  v-model="group.prompts"
+                  v-model="subsection.prompts"
                   :animation="300"
-                  :group="{ name: `prompt-group-${section}` }"
+                  :group="{ name: `prompt-subsection-${section}` }"
                   handle=".drag-and-drop__handle"
                 >
                   <prompt-list-item
-                    v-for="(prompt, index) in group.prompts"
+                    v-for="(prompt, index) in subsection.prompts"
                     :key="`${prompt.id}:${prompt.name}`"
                     v-bind="{
-                      errors: errors.get(`prompts.${fullSection}.${globalIndex(groupIndex, index)}.*`),
+                      errors: errors.get(`prompts.${fullSection}.${globalIndex(subsectionIndex, index)}.*`),
                       mode,
                       prompt,
                       index,
                       templates,
                     }"
                     :move-sections="moveSections(prompt)"
-                    @prompt-copy="copy(groupIndex, $event)"
-                    @prompt-edit="edit(groupIndex, $event)"
-                    @prompt-move="move(groupIndex, $event)"
-                    @prompt-remove="remove(groupIndex, $event)"
-                    @prompt-sync="sync(groupIndex, $event)"
+                    @prompt-copy="copy(subsectionIndex, $event)"
+                    @prompt-edit="edit(subsectionIndex, $event)"
+                    @prompt-move="move(subsectionIndex, $event)"
+                    @prompt-remove="remove(subsectionIndex, $event)"
+                    @prompt-sync="sync(subsectionIndex, $event)"
                   />
                 </vue-draggable>
               </v-list>
@@ -148,7 +172,7 @@ import type { SinglePrompt } from '@intake24/common/prompts';
 import type {
   MealSection,
   PromptSection,
-  PromptSubsection,
+  PromptSubsectionLayout,
   SurveyPromptSection,
 } from '@intake24/common/surveys';
 
@@ -161,7 +185,7 @@ import { JsonEditorDialog } from '@intake24/admin/components/editors';
 import { promptSettings } from '@intake24/admin/components/prompts';
 import { isMealSection } from '@intake24/common/surveys';
 import { copy as copyObject } from '@intake24/common/util';
-import { useI18n } from '@intake24/ui';
+import { ConfirmDialog, useI18n } from '@intake24/ui';
 
 import PromptSelector from '../prompt-selector.vue';
 import LoadPromptDialog from './load-prompt-dialog.vue';
@@ -174,7 +198,7 @@ export type PromptEvent = {
   prompt: SinglePrompt;
 };
 
-type PromptGroup = {
+type PromptSubsection = {
   name: string;
   expanded: boolean;
   prompts: SinglePrompt[];
@@ -210,8 +234,8 @@ const props = defineProps({
     type: Array as PropType<SinglePrompt[]>,
     default: () => [],
   },
-  subsections: {
-    type: Array as PropType<PromptSubsection[]>,
+  subsectionLayouts: {
+    type: Array as PropType<PromptSubsectionLayout[]>,
     default: () => [],
   },
   modelValue: {
@@ -220,12 +244,14 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['update:modelValue', 'update:groups', 'move']);
+const emit = defineEmits(['update:modelValue', 'update:subsectionLayouts', 'move']);
 
 const { i18n } = useI18n();
 
 const selector = ref<InstanceType<typeof PromptSelector>>();
-const pendingGroupIndex = ref<number | null>(null);
+const pendingSubsectionIndex = ref<number | null>(null);
+const subsectionNameDraft = ref('');
+const trailingPromptsRegex = /\s+prompts$/i;
 
 const isOverrideMode = computed(() => props.mode === 'override');
 const title = computed(() => i18n.t(
@@ -239,139 +265,142 @@ const subtitle = computed(() => i18n.t(
     : `survey-schemes.prompts.${props.section}.subtitle`,
 ));
 const fullSection = computed(() => isMealSection(props.section) ? `meals.${props.section}` : props.section);
-const groupsState = ref<PromptGroup[]>(buildGroups(copyObject(props.modelValue), copyObject(props.subsections)));
+const subsectionsState = ref<PromptSubsection[]>(buildSubsections(copyObject(props.modelValue), copyObject(props.subsectionLayouts)));
 const prompts = computed<SinglePrompt[]>({
-  get: () => flattenGroups(groupsState.value),
+  get: () => flattenSubsections(subsectionsState.value),
   set: (value) => {
-    groupsState.value = buildGroups(copyObject(value), copyObject(props.subsections));
+    subsectionsState.value = buildSubsections(copyObject(value), copyObject(props.subsectionLayouts));
   },
 });
 
-function defaultGroupName(index: number) {
-  return `${i18n.t('survey-schemes.prompts.internal.group._')} ${index + 1}`;
+function defaultSubsectionName(index: number) {
+  const sectionTitle = i18n.t(`survey-schemes.prompts.${props.section}.title`);
+  const sectionBase = sectionTitle.replace(trailingPromptsRegex, '');
+
+  return `${sectionBase} ${index + 1}`;
 }
 
-function groupKey(index: number) {
+function subsectionKey(index: number) {
   return `${props.section}:${index}`;
 }
 
-function buildGroups(prompts: SinglePrompt[], groups: PromptSubsection[]): PromptGroup[] {
+function buildSubsections(prompts: SinglePrompt[], subsections: PromptSubsectionLayout[]): PromptSubsection[] {
   if (isOverrideMode.value)
-    return [{ name: defaultGroupName(0), expanded: true, prompts: [...prompts] }];
+    return [{ name: defaultSubsectionName(0), expanded: true, prompts: [...prompts] }];
 
-  if (!groups.length)
-    return [{ name: defaultGroupName(0), expanded: true, prompts: [...prompts] }];
+  if (!subsections.length)
+    return [{ name: defaultSubsectionName(0), expanded: true, prompts: [...prompts] }];
 
   let offset = 0;
-  const items = groups.map((item, index) => {
+  const items = subsections.map((item, index) => {
     const size = Math.max(0, item.size || 0);
-    const groupPrompts = prompts.slice(offset, offset + size);
+    const subsectionPrompts = prompts.slice(offset, offset + size);
     offset += size;
 
     return {
-      name: item.name || defaultGroupName(index),
+      name: item.name || defaultSubsectionName(index),
       expanded: item.expanded ?? true,
-      prompts: groupPrompts,
+      prompts: subsectionPrompts,
     };
   });
 
   if (offset < prompts.length)
-    items.push({ name: defaultGroupName(items.length), expanded: true, prompts: prompts.slice(offset) });
+    items.push({ name: defaultSubsectionName(items.length), expanded: true, prompts: prompts.slice(offset) });
 
-  return items.length ? items : [{ name: defaultGroupName(0), expanded: true, prompts: [...prompts] }];
+  return items.length ? items : [{ name: defaultSubsectionName(0), expanded: true, prompts: [...prompts] }];
 }
 
-function flattenGroups(groups: PromptGroup[]) {
-  return groups.flatMap(group => group.prompts);
+function flattenSubsections(subsections: PromptSubsection[]) {
+  return subsections.flatMap(subsection => subsection.prompts);
 }
 
-function serializedGroups(groups: PromptGroup[]): PromptSubsection[] {
-  return groups.map((group, index) => ({
-    id: groupKey(index),
-    size: group.prompts.length,
-    expanded: group.expanded,
-    name: group.name,
+function serializedSubsections(subsections: PromptSubsection[]): PromptSubsectionLayout[] {
+  return subsections.map((subsection, index) => ({
+    id: subsectionKey(index),
+    size: subsection.prompts.length,
+    expanded: subsection.expanded,
+    name: subsection.name,
   }));
 }
 
-function locate(groupIndex: number, index: number) {
-  const group = groupsState.value[groupIndex];
-  if (!group)
+function locate(subsectionIndex: number, index: number) {
+  const subsection = subsectionsState.value[subsectionIndex];
+  if (!subsection)
     return;
 
-  return { group, index };
+  return { subsection, index };
 }
 
-function globalIndex(groupIndex: number, index: number) {
+function globalIndex(subsectionIndex: number, index: number) {
   let offset = 0;
-  for (let idx = 0; idx < groupsState.value.length; idx++) {
-    if (idx === groupIndex)
+  for (let idx = 0; idx < subsectionsState.value.length; idx++) {
+    if (idx === subsectionIndex)
       return offset + index;
 
-    offset += groupsState.value[idx].prompts.length;
+    offset += subsectionsState.value[idx].prompts.length;
   }
 
   return index;
 }
 
-function ensureGroup(targetGroupIndex?: number | null) {
-  if (typeof targetGroupIndex === 'number') {
-    const item = groupsState.value[targetGroupIndex];
+function ensureSubsection(targetSubsectionIndex?: number | null): PromptSubsection {
+  if (typeof targetSubsectionIndex === 'number') {
+    const item = subsectionsState.value[targetSubsectionIndex];
     if (item)
       return item;
   }
 
-  if (!groupsState.value.length)
-    groupsState.value.push({ name: defaultGroupName(0), expanded: true, prompts: [] });
+  if (!subsectionsState.value.length)
+    subsectionsState.value.push({ name: defaultSubsectionName(0), expanded: true, prompts: [] });
 
-  return groupsState.value[groupsState.value.length - 1];
+  return subsectionsState.value.at(-1)!;
 };
 
 function clearErrors(index?: number) {
   props.errors.clear(typeof index === 'undefined' ? `prompts.${fullSection.value}.*` : `prompts.${fullSection.value}.${index}.*`);
 }
 
-function create(groupIndex?: number) {
+function create(subsectionIndex?: number) {
   if (isOverrideMode.value)
     return;
 
-  pendingGroupIndex.value = typeof groupIndex === 'number' ? groupIndex : null;
-  selector.value?.create();
+  pendingSubsectionIndex.value = typeof subsectionIndex === 'number' ? subsectionIndex : null;
+  selector.value?.create?.();
 };
 
 function load(prompt: SinglePrompt) {
   clearErrors();
-  ensureGroup().prompts.push(prompt);
+  ensureSubsection().prompts.push(prompt);
 };
 
-function copy(groupIndex: number, { prompt, index }: PromptEvent) {
-  const target = locate(groupIndex, index);
+function copy(subsectionIndex: number, { prompt, index }: PromptEvent) {
+  const target = locate(subsectionIndex, index);
   if (!target)
     return;
 
-  target.group.prompts.splice(index + 1, 0, { ...copyObject(prompt), id: `${prompt.id}-copy`, name: `${prompt.name} (copy)` });
+  target.subsection.prompts.splice(index + 1, 0, { ...copyObject(prompt), id: `${prompt.id}-copy`, name: `${prompt.name} (copy)` });
 };
 
-function edit(groupIndex: number, { prompt, index }: PromptEvent) {
-  const itemIndex = globalIndex(groupIndex, index);
-  const errors = props.errors.get(`prompts.${fullSection.value}.${itemIndex}.*`);
-  selector.value?.edit(itemIndex, prompt, errors);
+function edit(subsectionIndex: number, { prompt, index }: PromptEvent) {
+  const itemIndex = globalIndex(subsectionIndex, index);
+  const errors = props.errors?.get(`prompts.${fullSection.value}.${itemIndex}.*`);
+  selector.value?.edit?.(itemIndex, prompt, errors);
 };
 
 function save({ prompt, index }: PromptEvent) {
   if (index === -1) {
-    ensureGroup(pendingGroupIndex.value).prompts.push(prompt);
-    pendingGroupIndex.value = null;
+    ensureSubsection(pendingSubsectionIndex.value).prompts.push(prompt);
+    pendingSubsectionIndex.value = null;
   }
   else {
     let offset = 0;
-    for (const group of groupsState.value) {
-      if (index < offset + group.prompts.length) {
-        group.prompts.splice(index - offset, 1, prompt);
+    for (const subsection of subsectionsState.value) {
+      if (index < offset + subsection.prompts.length) {
+        subsection.prompts.splice(index - offset, 1, prompt);
         break;
       }
 
-      offset += group.prompts.length;
+      offset += subsection.prompts.length;
     }
   }
 
@@ -387,98 +416,104 @@ function moveSections(prompt: SinglePrompt): MoveSection[] {
     }));
 };
 
-function move(groupIndex: number, event: PromptMoveEvent) {
+function move(subsectionIndex: number, event: PromptMoveEvent) {
   if (isOverrideMode.value)
     return;
 
-  const target = locate(groupIndex, event.index);
+  const target = locate(subsectionIndex, event.index);
   if (!target)
     return;
 
-  emit('move', { ...event, index: globalIndex(groupIndex, event.index) });
-  target.group.prompts.splice(event.index, 1);
+  emit('move', { ...event, index: globalIndex(subsectionIndex, event.index) });
+  target.subsection.prompts.splice(event.index, 1);
 };
 
-function remove(groupIndex: number, index: number) {
-  const target = locate(groupIndex, index);
+function remove(subsectionIndex: number, index: number) {
+  const target = locate(subsectionIndex, index);
   if (!target)
     return;
 
-  clearErrors(globalIndex(groupIndex, index));
-  target.group.prompts.splice(index, 1);
+  clearErrors(globalIndex(subsectionIndex, index));
+  target.subsection.prompts.splice(index, 1);
 };
 
-function sync(groupIndex: number, { prompt, index }: PromptEvent) {
+function sync(subsectionIndex: number, { prompt, index }: PromptEvent) {
   if (isOverrideMode.value)
     return;
 
-  const target = locate(groupIndex, index);
+  const target = locate(subsectionIndex, index);
   if (!target)
     return;
 
-  target.group.prompts.splice(index, 1, prompt);
+  target.subsection.prompts.splice(index, 1, prompt);
 };
 
-function addGroup() {
-  groupsState.value.push({ name: defaultGroupName(groupsState.value.length), expanded: true, prompts: [] });
+function addSubsection() {
+  subsectionsState.value.push({ name: defaultSubsectionName(subsectionsState.value.length), expanded: true, prompts: [] });
 }
 
-function removeGroup(groupIndex: number) {
-  const group = groupsState.value[groupIndex];
-  if (!group || group.prompts.length)
+function removeSubsection(subsectionIndex: number) {
+  const subsection = subsectionsState.value[subsectionIndex];
+  if (!subsection || subsection.prompts.length)
     return;
 
-  groupsState.value.splice(groupIndex, 1);
+  subsectionsState.value.splice(subsectionIndex, 1);
 }
 
-function toggleGroup(groupIndex: number) {
-  const group = groupsState.value[groupIndex];
-  if (!group)
+function toggleSubsectionExpand(subsectionIndex: number) {
+  const subsection = subsectionsState.value[subsectionIndex];
+  if (!subsection)
     return;
 
-  group.expanded = !group.expanded;
+  subsection.expanded = !subsection.expanded;
+}
+
+function startRenameSubsection(subsectionIndex: number) {
+  const subsection = subsectionsState.value[subsectionIndex];
+  if (!subsection)
+    return;
+
+  subsectionNameDraft.value = subsection.name;
+}
+
+function renameSubsection(subsectionIndex: number) {
+  const subsection = subsectionsState.value[subsectionIndex];
+  if (!subsection)
+    return;
+
+  const name = subsectionNameDraft.value.trim();
+  if (!name)
+    return;
+
+  subsection.name = name;
+  clearRenameSubsection();
+}
+
+function clearRenameSubsection() {
+  subsectionNameDraft.value = '';
 }
 
 function update() {
-  const prompts = flattenGroups(groupsState.value);
+  const prompts = flattenSubsections(subsectionsState.value);
   if (!deepEqual(prompts, props.modelValue))
     emit('update:modelValue', prompts);
 
-  const groups = serializedGroups(groupsState.value);
-  if (!deepEqual(groups, props.subsections))
-    emit('update:groups', groups);
+  const subsectionLayouts = serializedSubsections(subsectionsState.value);
+  if (!deepEqual(subsectionLayouts, props.subsectionLayouts))
+    emit('update:subsectionLayouts', subsectionLayouts);
 };
 
 function syncFromProps() {
-  if (deepEqual(props.modelValue, flattenGroups(groupsState.value)) && deepEqual(props.subsections, serializedGroups(groupsState.value)))
+  if (deepEqual(props.modelValue, flattenSubsections(subsectionsState.value)) && deepEqual(props.subsectionLayouts, serializedSubsections(subsectionsState.value)))
     return;
 
-  groupsState.value = buildGroups(copyObject(props.modelValue), copyObject(props.subsections));
+  subsectionsState.value = buildSubsections(copyObject(props.modelValue), copyObject(props.subsectionLayouts));
 }
 
 watch(() => props.modelValue, syncFromProps, { deep: true });
-watch(() => props.subsections, syncFromProps, { deep: true });
+watch(() => props.subsectionLayouts, syncFromProps, { deep: true });
 
-watch(groupsState, () => {
+watch(subsectionsState, () => {
   update();
 }, { deep: true });
 </script>
-
-<style lang="scss">
-.prompt-group {
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  border-radius: 4px;
-}
-
-.prompt-group__title {
-  background: rgba(var(--v-theme-on-surface), 0.03);
-}
-
-.prompt-group__name {
-  max-width: 260px;
-}
-
-.prompt-group__handle {
-  cursor: grab;
-}
-</style>

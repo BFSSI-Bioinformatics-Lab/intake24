@@ -52,24 +52,24 @@ export type FoodSection = (typeof foodSections)[number];
 export const promptSections = [...surveySections, ...mealSections] as const;
 export type PromptSection = (typeof promptSections)[number];
 
-export const promptSubsection = z.object({
+export const promptSubsectionLayout = z.object({
   id: z.string(),
   size: z.coerce.number().int().min(0),
   expanded: z.boolean().optional(),
   name: z.string().optional(),
 });
-export type PromptSubsection = z.infer<typeof promptSubsection>;
+export type PromptSubsectionLayout = z.infer<typeof promptSubsectionLayout>;
 
-export const promptSubsections = z.object({
-  preMeals: promptSubsection.array(),
-  preFoods: promptSubsection.array(),
-  foods: promptSubsection.array(),
-  postFoods: promptSubsection.array(),
-  foodsDeferred: promptSubsection.array(),
-  postMeals: promptSubsection.array(),
-  submission: promptSubsection.array(),
+export const promptSubsectionLayouts = z.object({
+  preMeals: promptSubsectionLayout.array(),
+  preFoods: promptSubsectionLayout.array(),
+  foods: promptSubsectionLayout.array(),
+  postFoods: promptSubsectionLayout.array(),
+  foodsDeferred: promptSubsectionLayout.array(),
+  postMeals: promptSubsectionLayout.array(),
+  submission: promptSubsectionLayout.array(),
 }).partial();
-export type PromptSubsections = z.infer<typeof promptSubsections>;
+export type PromptSubsectionLayouts = z.infer<typeof promptSubsectionLayouts>;
 
 export const promptWithSection = basePrompt.extend({
   section: z.enum(promptSections),
@@ -97,7 +97,7 @@ export const recallPrompts = z.object({
   postMeals: singlePrompt.array(),
   submission: singlePrompt.array(),
   ui: z.object({
-    subsections: promptSubsections,
+    subsectionLayouts: promptSubsectionLayouts.optional(),
   }).optional(),
 });
 export type RecallPrompts = z.infer<typeof recallPrompts>;

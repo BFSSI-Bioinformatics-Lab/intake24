@@ -35,12 +35,12 @@
           step: index + 1,
           promptIds,
           templates,
-          subsections: promptSubsections(section),
+          subsectionLayouts: promptSubsectionLayouts(section),
           modelValue: isMealSection(section) ? data.prompts.meals[section] : data.prompts[section],
         }"
         @move="move"
         @update:model-value="updateItems(section, $event)"
-        @update:subsections="updateSubsections(section, $event)"
+        @update:subsection-layouts="updateSubsectionLayouts(section, $event)"
       />
     </v-expansion-panels>
   </layout>
@@ -50,7 +50,7 @@
 import type { SurveySchemeForm } from '../form.vue';
 import type { PromptMoveEvent } from '@intake24/admin/components/prompts/list/prompt-list.vue';
 import type { SinglePrompt } from '@intake24/common/prompts';
-import type { PromptSection, PromptSubsection, RecallPrompts } from '@intake24/common/surveys';
+import type { PromptSection, PromptSubsectionLayout, RecallPrompts } from '@intake24/common/surveys';
 import type { SurveySchemeEntry, SurveySchemeRefs } from '@intake24/common/types/http/admin';
 
 import { defineComponent, ref } from 'vue';
@@ -127,14 +127,15 @@ export default defineComponent({
       this.data.prompts = { ...prompts };
     },
 
-    promptSubsections(section: PromptSection): PromptSubsection[] {
-      return this.data.prompts.ui?.subsections?.[section] ?? [];
+    promptSubsectionLayouts(section: PromptSection): PromptSubsectionLayout[] {
+      return this.data.prompts.ui?.subsectionLayouts?.[section]
+        ?? [];
     },
 
-    updateSubsections(section: PromptSection, groups: PromptSubsection[]) {
-      this.data.prompts.ui = this.data.prompts.ui || { subsections: {} };
-      this.data.prompts.ui.subsections = this.data.prompts.ui.subsections || {};
-      this.data.prompts.ui.subsections[section] = groups;
+    updateSubsectionLayouts(section: PromptSection, subsectionLayouts: PromptSubsectionLayout[]) {
+      this.data.prompts.ui = this.data.prompts.ui || { subsectionLayouts: {} };
+      this.data.prompts.ui.subsectionLayouts = this.data.prompts.ui.subsectionLayouts || {};
+      this.data.prompts.ui.subsectionLayouts[section] = subsectionLayouts;
     },
 
     move(event: PromptMoveEvent) {
