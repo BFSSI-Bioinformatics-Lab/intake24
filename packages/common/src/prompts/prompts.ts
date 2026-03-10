@@ -271,8 +271,8 @@ const yesNoPrompt = z.object({
   useFlag: z.boolean(),
   flag: z.string().optional(),
   updateFood: z.boolean().default(false),
-  updateFoodYes: z.string().default(''),
-  updateFoodNo: z.string().default(''),
+  updateFoodYes: z.nullable(z.string()),
+  updateFoodNo: z.nullable(z.string()),
 });
 
 // Portion size
