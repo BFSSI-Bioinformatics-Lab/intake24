@@ -185,7 +185,6 @@ import {
   useLabels,
   useMultiple,
   usePanel,
-  usePortionSizeMethod,
 } from '../partials';
 import { calculateFillVolume, getSymmetryShape } from '../partials/drink-scale-cylindrical';
 import { createPortionPromptProps } from '../prompt-props';
@@ -225,7 +224,6 @@ function calculateVolume(scale: DrinkwareScaleEntry | DrinkwareScaleV2Response, 
 }
 
 const { action, type } = usePromptUtils(props, { emit });
-const { parameters, psmValid } = usePortionSizeMethod<'drink-scale'>(props);
 const { multipleProps, multipleEnabled } = useMultiple(props);
 const { foodName } = useFoodUtils(props);
 

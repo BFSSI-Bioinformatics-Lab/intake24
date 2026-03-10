@@ -13,6 +13,10 @@ export const checkboxListPrompt: Prompts['checkbox-list-prompt'] = copy({
   name: 'Checkbox List Prompt',
   options: { en: [] },
   other: false,
+  updateFood: false,
+  updateFoodOptions: {},
+  updateFoodDefaultOption: {},
+  updateFoodDefaultOptionValue: {},
 });
 
 export const datePickerPrompt: Prompts['date-picker-prompt'] = copy({

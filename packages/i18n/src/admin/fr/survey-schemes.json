@@ -702,8 +702,7 @@
       "subtitle": "Demander de choisir une heure"
     },
     "checkbox-list-prompt": {
-      "title": "Choix multiple",
-      "subtitle": "Demander de choisir n'importe quel nombre d'éléments d'une liste"
+      "title": "Choix multiple"
     },
     "radio-list-prompt": {
       "title": "Choix unique",
@@ -725,7 +724,9 @@
       "title": "Choix OUI/NON",
       "subtitle": "Demander de choisir oui ou non",
       "useFlag": "Set a flag instead of custom prompt answer",
-      "flag": "Flag"
+      "flag": "Flag",
+      "updateFoodYes": "Code aliment pour Oui",
+      "updateFoodNo": "Code aliment pour Non"
     },
     "aggregate-choice-prompt": {
       "title": "Question agregée sur plusieurs aliments",

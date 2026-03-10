@@ -47,6 +47,14 @@
             :rules="optionValueRules"
             variant="outlined"
           />
+          <v-text-field
+            v-if="props.updateFood"
+            v-model="option.updateFoodValue"
+            density="compact"
+            hide-details="auto"
+            :label="$t('common.options.updateFood')"
+            variant="outlined"
+          />
           <div class="d-flex flex-column flex-sm-row gc-6 px-2">
             <v-switch
               v-model="option.selected"
@@ -84,13 +92,17 @@ import { deepEqual } from 'fast-equals';
 import { computed, ref, watch } from 'vue';
 import { VueDraggable } from 'vue-draggable-plus';
 
-import { toIndexedList } from '@intake24/admin/util';
+import { addMissingIds } from '@intake24/admin/util';
 
 defineOptions({ name: 'OptionsList' });
 
 const props = defineProps({
   exclusive: {
     type: Boolean,
+  },
+  updateFood: {
+    type: Boolean,
+    default: false,
   },
   numeric: {
     type: Boolean,
@@ -111,7 +123,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:options']);
 
-const currentOptions = ref(toIndexedList(props.options));
+const currentOptions = ref(addMissingIds(props.options));
 
 const defaultValueRules = [
   (value: string | null): boolean | string => {
@@ -120,12 +132,11 @@ const defaultValueRules = [
   },
 ];
 
-const outputOptions = computed<ListOption<ZodString | ZodNumber>[]>(() => currentOptions.value.map(({ id, ...rest }) => (rest)));
 const optionValueRules = computed<RuleCallback[]>(() => [...defaultValueRules, ...props.rules]);
 
 function add() {
-  const size = currentOptions.value.length + 1;
-  currentOptions.value.push({ id: size, label: `label-${size}`, shortLabel: `shortLabel-${size}`, value: props.numeric ? size : `value-${size}` });
+  const newId = currentOptions.value.reduce((acc, cur) => Math.max(acc, cur.id), 0) + 1;
+  currentOptions.value.push({ id: newId, label: `label-${newId}`, shortLabel: `shortLabel-${newId}`, value: props.numeric ? newId : `value-${newId}`, updateFoodValue: 'NO_UPDATE' });
 };
 
 function remove(index: number) {
@@ -133,17 +144,17 @@ function remove(index: number) {
 };
 
 function update() {
-  emit('update:options', outputOptions.value);
+  emit('update:options', currentOptions.value);
 };
 
 watch(() => props.options, (val) => {
-  if (deepEqual(val, outputOptions.value))
+  if (deepEqual(val, currentOptions.value))
     return;
 
-  currentOptions.value = toIndexedList(val);
+  currentOptions.value = addMissingIds(val);
 });
 
-watch(outputOptions, () => {
+watch(currentOptions, () => {
   update();
 }, { deep: true });
 </script>
