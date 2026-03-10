@@ -52,6 +52,25 @@ export type FoodSection = (typeof foodSections)[number];
 export const promptSections = [...surveySections, ...mealSections] as const;
 export type PromptSection = (typeof promptSections)[number];
 
+export const promptSubsectionLayout = z.object({
+  id: z.string(),
+  size: z.coerce.number().int().min(0),
+  expanded: z.boolean().optional(),
+  name: z.string().optional(),
+});
+export type PromptSubsectionLayout = z.infer<typeof promptSubsectionLayout>;
+
+export const promptSubsectionLayouts = z.object({
+  preMeals: promptSubsectionLayout.array(),
+  preFoods: promptSubsectionLayout.array(),
+  foods: promptSubsectionLayout.array(),
+  postFoods: promptSubsectionLayout.array(),
+  foodsDeferred: promptSubsectionLayout.array(),
+  postMeals: promptSubsectionLayout.array(),
+  submission: promptSubsectionLayout.array(),
+}).partial();
+export type PromptSubsectionLayouts = z.infer<typeof promptSubsectionLayouts>;
+
 export const promptWithSection = basePrompt.extend({
   section: z.enum(promptSections),
 });
@@ -77,6 +96,9 @@ export const recallPrompts = z.object({
   }),
   postMeals: singlePrompt.array(),
   submission: singlePrompt.array(),
+  ui: z.object({
+    subsectionLayouts: promptSubsectionLayouts.optional(),
+  }).optional(),
 });
 export type RecallPrompts = z.infer<typeof recallPrompts>;
 
@@ -94,24 +116,27 @@ export const groupedRecallPrompts = z.object({
 export type GroupedRecallPrompts = z.infer<typeof groupedRecallPrompts>;
 
 export function flattenScheme(scheme: RecallPrompts): SinglePrompt[] {
-  return Object.values(scheme).reduce<SinglePrompt[]>((acc, prompts) => {
-    // @ts-expect-error fix
-    acc.push(...(Array.isArray(prompts) ? prompts : flattenScheme(prompts)));
-    return acc;
-  }, []);
+  return [
+    ...scheme.preMeals,
+    ...scheme.meals.preFoods,
+    ...scheme.meals.foods,
+    ...scheme.meals.postFoods,
+    ...scheme.meals.foodsDeferred,
+    ...scheme.postMeals,
+    ...scheme.submission,
+  ];
 }
 
 export function flattenSchemeWithSection(scheme: RecallPrompts): PromptWithSection[] {
-  return Object.entries(scheme).reduce<PromptWithSection[]>((acc, [section, prompts]) => {
-    const items = Array.isArray(prompts)
-      ? prompts.map(prompt => ({ ...prompt, section }))
-      // @ts-expect-error fix
-      : flattenSchemeWithSection(prompts);
-
-    // @ts-expect-error fix
-    acc.push(...items);
-    return acc;
-  }, []);
+  return [
+    ...scheme.preMeals.map(prompt => ({ ...prompt, section: 'preMeals' as const })),
+    ...scheme.meals.preFoods.map(prompt => ({ ...prompt, section: 'preFoods' as const })),
+    ...scheme.meals.foods.map(prompt => ({ ...prompt, section: 'foods' as const })),
+    ...scheme.meals.postFoods.map(prompt => ({ ...prompt, section: 'postFoods' as const })),
+    ...scheme.meals.foodsDeferred.map(prompt => ({ ...prompt, section: 'foodsDeferred' as const })),
+    ...scheme.postMeals.map(prompt => ({ ...prompt, section: 'postMeals' as const })),
+    ...scheme.submission.map(prompt => ({ ...prompt, section: 'submission' as const })),
+  ];
 }
 
 export function groupMultiPrompts(prompts: SinglePrompt[]) {

@@ -265,6 +265,10 @@
     "move": "Move prompt",
     "remove": "Remove prompt",
     "section": "Prompts section",
+    "subsection": {
+      "add": "Add subsection",
+      "rename": "Rename subsection"
+    },
     "preMeals": {
       "title": "Pre-recall prompts",
       "subtitle": "General prompts asked before the dietary recall, including personal prompts and the initial instructions."
@@ -291,7 +295,7 @@
     },
     "foodsDeferred": {
       "title": "Deferred food prompts",
-      "subtitle": "Additional questions asked about foods after the post-food meal prompts have been completed."
+      "subtitle": "Additional questions asked about foods aftr the post-food meal prompts have been completed."
     },
     "internal": {
       "_": "Internal identifiers",
