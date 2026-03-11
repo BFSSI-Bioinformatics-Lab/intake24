@@ -371,7 +371,7 @@ const standardPortionPrompt = z.object({
 const unknownPrompt = z.object({
   ...basePortionPrompt.shape,
   component: z.literal('unknown-prompt'),
-  defaultWeight: z.number().optional(),
+  weight: z.number().nullish(),
 });
 
 // Standard
