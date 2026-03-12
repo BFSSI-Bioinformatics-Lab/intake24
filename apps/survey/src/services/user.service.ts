@@ -21,12 +21,14 @@ export default {
   },
 
   savePhysicalData: async (
-    survey: string,
     input: UserPhysicalData,
+    survey?: string,
   ): Promise<UserPhysicalDataResponse> => {
-    const { data } = await http.post<UserPhysicalDataResponse>(`user/physical-data`, input, {
-      params: { survey },
-    });
+    const { data } = await http.post<UserPhysicalDataResponse>(
+      `user/physical-data`,
+      input,
+      survey ? { params: { survey } } : undefined,
+    );
     return data;
   },
 

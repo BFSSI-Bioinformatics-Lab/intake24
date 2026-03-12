@@ -236,7 +236,7 @@ export default defineComponent({
       const { surveyId } = this;
 
       try {
-        await userService.savePhysicalData(surveyId, this.form);
+        await userService.savePhysicalData(this.form, surveyId);
         this.$router.push({ name: 'feedback-home', params: { surveyId } });
       }
       catch (err) {
