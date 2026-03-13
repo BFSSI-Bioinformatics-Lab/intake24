@@ -107,6 +107,17 @@
                     {{ $t('common.action.continue') }}
                   </v-btn>
                 </v-col>
+                <v-col cols="12" sm="auto">
+                  <v-btn
+                    block
+                    class="px-10"
+                    color="primary"
+                    size="x-large"
+                    @click="withdrawConsent()"
+                  >
+                    {{ $t('feedback.consent.withdrawConsent') }}
+                  </v-btn>
+                </v-col>
               </v-row>
             </v-form>
           </v-card-text>
@@ -237,6 +248,34 @@ export default defineComponent({
 
       try {
         await userService.savePhysicalData(this.form, surveyId);
+        this.$router.push({ name: 'feedback-home', params: { surveyId } });
+      }
+      catch (err) {
+        if (
+          axios.isAxiosError(err)
+          && err.response?.status === HttpStatusCode.BadRequest
+          && 'errors' in err.response.data
+        ) {
+          this.errors.record(err.response.data.errors);
+          return;
+        }
+
+        throw err;
+      }
+    },
+    async withdrawConsent() {
+      const { surveyId } = this;
+      const clearedPhysicalData = {
+        sex: null,
+        birthdate: null,
+        heightCm: null,
+        weightKg: null,
+        physicalActivityLevelId: null,
+        weightTarget: null,
+      };
+
+      try {
+        await userService.savePhysicalData(clearedPhysicalData);
         this.$router.push({ name: 'feedback-home', params: { surveyId } });
       }
       catch (err) {

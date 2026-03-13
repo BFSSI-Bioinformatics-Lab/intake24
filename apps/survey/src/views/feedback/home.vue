@@ -2,31 +2,28 @@
   <div>
     <v-dialog
       v-model="consentDialog"
-      max-width="520"
+      max-width="800"
       persistent
     >
       <v-card>
-        <v-card-title class="text-h5">
-          Consent to collect physical data
+        <v-card-title class="text-h3">
+          {{ $t('feedback.consent.title') }}
         </v-card-title>
         <v-card-text>
-          Do you consent to providing some personal data for personalised feedback?
-          You can continue without consenting, but some feedback will be hidden.
-          The data we would ask for includes: {{ consentFieldsList }}
+          {{ $t('feedback.consent.text') }} {{ consentFieldsList }}.
         </v-card-text>
         <v-card-actions class="justify-end">
           <v-btn
-            color="secondary"
-            variant="text"
-            @click="setPhysicalDataConsent(false)"
+            color="primary"
+            @click="setConsent(true)"
           >
-            I do not consent
+            {{ $t('feedback.consent.doConsent') }}
           </v-btn>
           <v-btn
-            color="primary"
-            @click="setPhysicalDataConsent(true)"
+            color="secondary"
+            @click="setConsent(false)"
           >
-            I consent
+            {{ $t('feedback.consent.doNotConsent') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -207,7 +204,7 @@ export default defineComponent({
     const outputs = computed(() => feedbackScheme.value?.outputs ?? []);
 
     const userDemographic = ref<UserDemographic | null>(null);
-    const physicalDataConsent = ref<boolean | null>(null);
+    const consent = ref(true);
     const consentDialog = ref(false);
     const consentResolver = ref<((consent: boolean) => void) | undefined>(undefined);
     const selectedSubmissions = ref<string[]>([]);
@@ -234,7 +231,7 @@ export default defineComponent({
       hasMissingFoods,
       consentDialog,
       consentResolver,
-      physicalDataConsent,
+      consent,
       userDemographic,
       selectedSubmissions,
       cards,
@@ -271,48 +268,34 @@ export default defineComponent({
       return;
     }
 
-    const requiresPhysicalData = !!feedbackScheme.physicalDataFields.length;
-    const consent = requiresPhysicalData ? await this.askPhysicalDataConsent() : true;
-    this.physicalDataConsent = consent;
-
     const loading = useLoading();
     loading.addItem('feedback-initial-load');
 
     try {
       const { cards, demographicGroups: groups, henryCoefficients } = feedbackScheme;
 
-      const { physicalData: fetchedPhysicalData, submissions } = await this.getUserData(surveyId);
-      const physicalData = { ...fetchedPhysicalData };
+      const { physicalData, submissions } = await this.getUserData(surveyId);
 
-      if (!consent && requiresPhysicalData) {
-        const clearedPhysicalData = {
-          sex: null,
-          birthdate: null,
-          heightCm: null,
-          weightKg: null,
-          physicalActivityLevelId: null,
-          weightTarget: null,
-        };
-
-        await userService.savePhysicalData(clearedPhysicalData);
-        Object.assign(physicalData, clearedPhysicalData);
-      }
-
-      if (consent && feedbackScheme.physicalDataFields.some(item => physicalData[item] === null)) {
-        this.$router.push({ name: 'feedback-physical-data', params: { surveyId } });
-        return;
+      if (feedbackScheme.physicalDataFields.some(item => physicalData[item] === null)) {
+        loading.removeItem('feedback-initial-load');
+        this.consent = await this.askConsent();
+        loading.addItem('feedback-initial-load');
+        if (this.consent) {
+          this.$router.push({ name: 'feedback-physical-data', params: { surveyId } });
+          return;
+        }
       }
 
       const { feedbackDicts, userDemographic } = await this.feedbackService.getFeedbackResults({
-        cards: consent ? cards : [],
-        groups: consent ? groups : [],
-        henryCoefficients: consent ? henryCoefficients : [],
+        cards: this.consent ? cards : [],
+        groups: this.consent ? groups : [],
+        henryCoefficients: this.consent ? henryCoefficients : [],
         physicalData,
         submissions,
       });
 
       this.feedbackDicts = feedbackDicts;
-      this.userDemographic = consent ? userDemographic : null;
+      this.userDemographic = this.consent ? userDemographic : null;
 
       this.initSelectedSubmissions();
       this.buildFeedback();
@@ -323,13 +306,11 @@ export default defineComponent({
       throw err;
     }
     finally {
+      if (this.consentResolver) {
+        this.consentResolver(false);
+        this.consentResolver = undefined;
+      }
       loading.removeItem('feedback-initial-load');
-    }
-  },
-
-  beforeUnmount() {
-    if (this.consentResolver) {
-      this.consentResolver(false);
     }
   },
 
@@ -351,7 +332,7 @@ export default defineComponent({
       }
     },
 
-    askPhysicalDataConsent(): Promise<boolean> {
+    askConsent(): Promise<boolean> {
       this.consentDialog = true;
 
       return new Promise((resolve) => {
@@ -359,8 +340,8 @@ export default defineComponent({
       });
     },
 
-    setPhysicalDataConsent(consent: boolean) {
-      this.physicalDataConsent = consent;
+    setConsent(consent: boolean) {
+      this.consent = consent;
       this.consentDialog = false;
       this.consentResolver?.(consent);
       this.consentResolver = undefined;
@@ -417,7 +398,7 @@ export default defineComponent({
 
     buildFeedback() {
       const {
-        physicalDataConsent,
+        consent,
         feedbackDicts,
         feedbackScheme,
         selectedSubmissions,
@@ -431,7 +412,7 @@ export default defineComponent({
         return;
       }
 
-      if (physicalDataConsent && !userDemographic) {
+      if (consent && !userDemographic) {
         this.$router.push({ name: 'feedback-error', params: { surveyId } });
         return;
       }
@@ -456,7 +437,7 @@ export default defineComponent({
       const averageIntake = surveyStats.getAverageIntake(selected);
       const fruitAndVegPortions = surveyStats.getFruitAndVegPortions(selected);
 
-      if (physicalDataConsent && userDemographic) {
+      if (consent && userDemographic) {
         // @ts-expect-error - TODO: fix types
         this.cards = buildCardParams(cards, {
           foods,

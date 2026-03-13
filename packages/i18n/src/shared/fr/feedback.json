@@ -8,6 +8,13 @@
   },
   "title": "Synthèse de vos consommations",
   "missingFoods": "Tous les aliments signalés comme manquants ne seront pas inclus dans la synthèse des consommations alimentaires",
+  "consent": {
+    "title": "Consentement à la collecte de données",
+    "text": "Consentez-vous à fournir des données personnelles pour des commentaires personnalisés ? Vous pouvez continuer sans consentir, mais certains commentaires seront masqués. Si vous consentez, nous vous demanderons: ",
+    "doConsent": "Je consens",
+    "doNotConsent": "Je ne consens pas",
+    "withdrawConsent": "Retirer le consentement"
+  },
   "physicalData": {
     "title": "A propos de vous",
     "subtitle": "Afin que nous puissions vous communiquer les résultats de cette synthèse, veuillez renseigner les informations suivantes.",

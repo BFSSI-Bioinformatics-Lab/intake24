@@ -8,6 +8,13 @@
   },
   "title": "Dietary feedback from {name} recalls",
   "missingFoods": "Any foods reported as missing will not be included in dietary feedback",
+  "consent": {
+    "title": "Consent to collect physical data",
+    "text": "Do you consent to providing personal data for personalised feedback? You can continue without consenting, but some feedback will be hidden. If you consent, we will ask you for your: ",
+    "doConsent": "I do consent",
+    "doNotConsent": "I do not consent",
+    "withdrawConsent": "Withdraw consent"
+  },
   "physicalData": {
     "title": "About you",
     "subtitle": "So we can present your feedback in the right way, enter the following details.",
