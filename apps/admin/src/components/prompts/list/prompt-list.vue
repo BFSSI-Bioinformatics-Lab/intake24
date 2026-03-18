@@ -145,6 +145,8 @@
                       templates,
                     }"
                     :move-sections="moveSections(prompt)"
+                    :move-subsections="subsectionOptions"
+                    @prompt-change-subsection="changeSubsection(subsectionIndex, $event)"
                     @prompt-copy="copy(subsectionIndex, $event)"
                     @prompt-edit="edit(subsectionIndex, $event)"
                     @prompt-move="move(subsectionIndex, $event)"
@@ -192,6 +194,7 @@ import LoadPromptDialog from './load-prompt-dialog.vue';
 import PromptListItem from './prompt-list-item.vue';
 
 export type MoveSection = { value: string; title: string };
+export type MoveSubsection = { value: number; title: string };
 
 export type PromptEvent = {
   index: number;
@@ -206,6 +209,10 @@ type PromptSubsection = {
 
 export interface PromptMoveEvent extends PromptEvent {
   section: MealSection | SurveyPromptSection;
+}
+
+export interface PromptSubsectionMoveEvent extends PromptEvent {
+  subsectionIndex: number;
 }
 
 defineOptions({ name: 'PromptList' });
@@ -272,6 +279,10 @@ const prompts = computed<SinglePrompt[]>({
     subsectionsState.value = buildSubsections(copyObject(value), copyObject(props.subsectionLayouts));
   },
 });
+const subsectionOptions = computed<MoveSubsection[]>(() => subsectionsState.value.map((subsection, index) => ({
+  value: index,
+  title: subsection.name,
+})));
 
 function defaultSubsectionName(index: number) {
   const sectionTitle = i18n.t(`survey-schemes.prompts.${props.section}.title`);
@@ -426,6 +437,22 @@ function move(subsectionIndex: number, event: PromptMoveEvent) {
 
   emit('move', { ...event, index: globalIndex(subsectionIndex, event.index) });
   target.subsection.prompts.splice(event.index, 1);
+};
+
+function changeSubsection(subsectionIndex: number, event: PromptSubsectionMoveEvent) {
+  if (isOverrideMode.value || subsectionIndex === event.subsectionIndex)
+    return;
+
+  const source = locate(subsectionIndex, event.index);
+  const target = subsectionsState.value[event.subsectionIndex];
+  if (!source || !target)
+    return;
+
+  const [prompt] = source.subsection.prompts.splice(event.index, 1);
+  if (!prompt)
+    return;
+
+  target.prompts.push(prompt);
 };
 
 function remove(subsectionIndex: number, index: number) {

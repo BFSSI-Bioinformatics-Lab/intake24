@@ -262,12 +262,13 @@
     "create": "New prompt",
     "edit": "Edit prompt",
     "copy": "Copy prompt",
-    "move": "Move prompt",
+    "move": "Change section",
     "remove": "Remove prompt",
     "section": "Prompts section",
     "subsection": {
       "add": "Add subsection",
-      "rename": "Rename subsection"
+      "rename": "Rename subsection",
+      "change": "Change subsection"
     },
     "preMeals": {
       "title": "Pre-recall prompts",
