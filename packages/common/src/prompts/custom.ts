@@ -88,6 +88,7 @@ export const selectPrompt: Prompts['select-prompt'] = copy({
   id: 'select-prompt',
   name: 'Select prompt',
   multiple: false,
+  updateFood: false,
   options: { en: [] },
 });
 
@@ -132,8 +133,8 @@ export const yesNoPrompt: Prompts['yes-no-prompt'] = copy({
   component: 'yes-no-prompt',
   useFlag: false,
   updateFood: false,
-  updateFoodYes: '',
-  updateFoodNo: '',
+  updateFoodYes: 'NO_UPDATE',
+  updateFoodNo: 'NO_UPDATE',
   type: 'custom',
   id: 'yes-no-prompt',
   name: 'Yes / No prompt',

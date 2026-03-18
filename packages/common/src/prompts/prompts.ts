@@ -243,6 +243,7 @@ const selectPrompt = z.object({
   component: z.literal('select-prompt'),
   options: localeOptionList({ limit: 2048 }),
   multiple: z.boolean(),
+  updateFood: z.boolean().default(false),
 });
 
 const sliderPrompt = z.object({
