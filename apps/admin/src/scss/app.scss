@@ -68,3 +68,20 @@ ul.v-breadcrumbs {
 .json-editor {
   --jse-theme-color: rgb(var(--v-theme-info));
 }
+
+.prompt-subsection {
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  border-radius: 4px;
+}
+
+.prompt-subsection__title {
+  background: rgba(var(--v-theme-on-surface), 0.03);
+}
+
+.prompt-subsection__name {
+  max-width: 260px;
+}
+
+.prompt-subsection__handle {
+  cursor: grab;
+}

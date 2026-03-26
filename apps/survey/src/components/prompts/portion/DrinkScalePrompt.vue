@@ -186,7 +186,6 @@ import {
   useLabels,
   useMultiple,
   usePanel,
-  usePortionSizeMethod,
 } from '../partials';
 import { calculateFillVolume, getSymmetryShape } from '../partials/drink-scale-cylindrical';
 import { createPortionPromptProps } from '../prompt-props';

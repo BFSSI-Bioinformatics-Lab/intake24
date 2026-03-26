@@ -188,6 +188,16 @@ const checkboxListPrompt = z.object({
   component: z.literal('checkbox-list-prompt'),
   options: localeOptionList({ limit: 2048 }),
   other: z.boolean(),
+  updateFood: z.boolean().default(false),
+  updateFoodOptions: z.record(
+    z.string(),
+    z.record(z.string(), z.union([z.string(), z.null()]).transform(value => value ?? '')),
+  ).default({}),
+  updateFoodDefaultOption: z.record(z.string(), z.boolean()).default({}),
+  updateFoodDefaultOptionValue: z.record(
+    z.string(),
+    z.union([z.string(), z.null()]).transform(value => value ?? ''),
+  ).default({}),
   validation: promptValidationWithLimits,
 });
 
@@ -225,6 +235,7 @@ const radioListPrompt = z.object({
   options: localeOptionList(),
   orientation: z.enum(radioOrientations),
   other: z.boolean(),
+  updateFood: z.boolean(),
 });
 
 const selectPrompt = z.object({
@@ -233,6 +244,7 @@ const selectPrompt = z.object({
   component: z.literal('select-prompt'),
   options: localeOptionList({ limit: 2048 }),
   multiple: z.boolean(),
+  updateFood: z.boolean().default(false),
 });
 
 const sliderPrompt = z.object({
@@ -256,9 +268,13 @@ const timePickerPrompt = z.object({
 
 const yesNoPrompt = z.object({
   ...baseCustomPrompt.shape,
+  ...validatedPrompt.shape,
   component: z.literal('yes-no-prompt'),
   useFlag: z.boolean(),
   flag: z.string().optional(),
+  updateFood: z.boolean().default(false),
+  updateFoodYes: z.nullable(z.string()),
+  updateFoodNo: z.nullable(z.string()),
 });
 
 // Portion size
