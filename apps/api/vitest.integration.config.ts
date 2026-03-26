@@ -14,6 +14,7 @@ export default mergeConfig(
       clearMocks: true,
       hookTimeout: 30000,
       include: ['**/*.test.ts'],
+      exclude: ['**/*.stress.test.ts'],
       sequence: {
         concurrent: false,
       },

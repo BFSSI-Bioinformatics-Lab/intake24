@@ -10,6 +10,7 @@ import type {
   PortionSizeState,
   PortionSizeStates,
 } from '@intake24/common/surveys';
+import type { AutoPortionSizeParameters } from '@intake24/common/surveys/portion-size';
 import type { UserFoodData, UserPortionSizeMethod } from '@intake24/common/types/http';
 
 import { computed } from 'vue';
@@ -168,7 +169,7 @@ export function useFoodPromptUtils<T extends PortionSizeMethodId>() {
       food.type === 'encoded-food'
       && food.portionSize
       && 'quantity' in food.portionSize
-      && (food.portionSize.quantity ?? 0) > 1,
+      && (food.portionSize.quantity ?? 0) > 0,
     ) as EncodedFood | undefined;
 
     if (!food?.portionSize)
@@ -185,7 +186,7 @@ export function useFoodPromptUtils<T extends PortionSizeMethodId>() {
     };
   }
 
-  function getAutoPsmWeight({ parameters: { mode, value } }: AutoPsm, parent?: FoodState): { servingWeight: number; leftoversWeight: number } {
+  function getAutoPsmWeight({ mode, value }: AutoPortionSizeParameters, parent?: FoodState): { servingWeight: number; leftoversWeight: number } {
     if (mode === 'weight')
       return { servingWeight: value, leftoversWeight: 0 };
 
@@ -215,7 +216,7 @@ export function useFoodPromptUtils<T extends PortionSizeMethodId>() {
     const autoPsm = (autoPsmIdx !== -1 ? portionSizeMethods.at(autoPsmIdx) : undefined) as AutoPsm | undefined;
     if (autoPsm) {
       const { conversionFactor, parameters } = autoPsm;
-      const { servingWeight, leftoversWeight } = getAutoPsmWeight(autoPsm, parent);
+      const { servingWeight, leftoversWeight } = getAutoPsmWeight(parameters, parent);
       const linkedQuantity = getLinkedParent(foodData, parent)?.quantity ?? 1;
       portionSizeMethodIndex = autoPsmIdx;
       portionSize = {
@@ -258,6 +259,7 @@ export function useFoodPromptUtils<T extends PortionSizeMethodId>() {
     encodedFood,
     encodedFoodPortionSizeData,
     encodedFoodOptional,
+    getAutoPsmWeight,
     resolvePortionSize,
     freeTextFood,
     foodName,

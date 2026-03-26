@@ -107,10 +107,14 @@ Make sure databases are up to date running migration commands under project root
 ```sh
 pnpm db:migrate
 
-# Shortcuts for individual databases
+# Shortcut for following commands:
 
+# 1) individual databases migration
 pnpm db:system:migrate
 pnpm db:foods:migrate
+
+# 2) ACL synchronization (after migration and source code updates that may include changes to permissions)
+pnpm acl:sync
 ```
 
 More details can be found in [Database -> migrations](/guide/database#migrations).
