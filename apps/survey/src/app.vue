@@ -1,5 +1,9 @@
 <template>
   <v-app :class="{ mobile: $vuetify.display.mobile }">
+    <a class="skip-link" href="#main-content">
+      Skip to main content
+    </a>
+
     <loader :show="isAppLoading" />
     <v-navigation-drawer
       v-model="navDrawer"
@@ -7,6 +11,20 @@
       :location="$vuetify.display.mobile ? 'bottom' : undefined"
       temporary
     >
+      <div class="d-flex justify-left pa-2">
+        <v-btn
+          id="navClose"
+          class="me-2"
+          color="grey-darken-2"
+          rounded
+          variant="tonal"
+          @click.stop="navDrawer = false"
+        >
+          <v-icon icon="$close" start />
+          {{ $t('common.action.close') }}
+        </v-btn>
+      </div>
+      <v-divider />
       <template v-if="loggedIn && surveyId">
         <div class="py-3 d-flex flex-row justify-space-between align-center">
           <v-btn
@@ -32,9 +50,10 @@
         </div>
         <v-divider />
       </template>
-      <v-list density="compact" nav>
+      <v-list density="compact" nav tabindex="-1">
         <v-list-item
           link
+          tabindex="0"
           :to="
             loggedIn && surveyId
               ? { name: 'survey-home', params: { surveyId } }
@@ -50,6 +69,7 @@
           <v-list-item
             v-if="recallAllowed"
             link
+            tabindex="0"
             :to="{ name: 'survey-recall', params: { surveyId } }"
           >
             <template #prepend>
@@ -60,6 +80,7 @@
           <v-list-item
             v-if="feedbackAllowed"
             link
+            tabindex="0"
             :to="{ name: 'feedback-home', params: { surveyId } }"
           >
             <template #prepend>
@@ -113,7 +134,6 @@
           <v-spacer />
           <v-btn
             v-if="surveyId"
-            :title="$t('profile._')"
             :to="{ name: 'survey-profile', params: { surveyId } }"
           >
             <span>{{ $t('profile._') }}</span>
@@ -137,7 +157,7 @@
         <v-app-bar-title>{{ $t('common._') }}</v-app-bar-title>
       </template>
     </v-app-bar>
-    <v-main>
+    <v-main id="main-content" tag="main">
       <router-view />
     </v-main>
     <navigation
@@ -158,7 +178,7 @@
 
 <script lang="ts" setup>
 import { storeToRefs } from 'pinia';
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useLocale } from 'vuetify';
 
@@ -204,6 +224,18 @@ async function logout() {
 
 watch(title, () => {
   document.title = title.value;
+});
+
+watch(navDrawer, async (isOpen) => {
+  if (isOpen) {
+    await nextTick();
+
+    const firstLink = document.querySelector('#navClose');
+
+    if (firstLink instanceof HTMLElement) {
+      firstLink.focus();
+    }
+  }
 });
 </script>
 

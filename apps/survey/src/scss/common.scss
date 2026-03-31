@@ -66,6 +66,12 @@ p {
   }
 }
 
+.v-card-subtitle,
+.v-list-item-subtitle,
+.v-list-subheader {
+  color: rgba(var(--v-theme-on-surface), 1) !important;
+}
+
 .list-border {
   .v-list-item:not(:last-child) {
     border-bottom: 1px solid map.get(settings.$grey, 'lighten-3');

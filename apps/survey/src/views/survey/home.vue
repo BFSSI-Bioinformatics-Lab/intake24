@@ -4,14 +4,14 @@
       <v-col cols="12" lg="9">
         <v-card :tile="$vuetify.display.mobile">
           <!-- Survey info -->
-          <v-card-title class="text-h5 font-weight-medium mb-2 pt-4">
+          <v-card-title class="text-h5 font-weight-medium mb-2 pt-4" tag="h1">
             {{ $t('survey.welcome._') }}
           </v-card-title>
           <v-card-subtitle class="pb-4">
             {{ $t('survey.welcome.subtitle') }}
           </v-card-subtitle>
           <v-divider />
-          <v-list class="list__no-wrap" lines="two">
+          <v-list class="list__no-wrap" lines="two" tabindex="">
             <v-list-subheader>{{ $t('survey.info') }}</v-list-subheader>
             <v-list-item>
               <v-list-item-title>{{ $t('survey._') }}</v-list-item-title>
@@ -29,7 +29,7 @@
           <v-divider />
           <!-- Recall info -->
           <template v-if="recallAllowed">
-            <v-list class="list__no-wrap">
+            <v-list class="list__no-wrap" tabindex="-1">
               <v-list-subheader>{{ $t('recall.info') }}</v-list-subheader>
               <template v-if="limitReached">
                 <v-list-item>
@@ -59,7 +59,6 @@
                         block
                         color="primary"
                         rounded
-                        :title="$t('recall.start.another')"
                         variant="outlined"
                         @click.stop="startRecall"
                       >
@@ -77,7 +76,6 @@
                     color="primary"
                     rounded
                     size="large"
-                    :title="$t('recall.start.another')"
                     variant="outlined"
                     @click.stop="startRecall"
                   >
@@ -104,7 +102,6 @@
                         class="me-2"
                         color="info"
                         rounded
-                        :title="$t('recall.continue')"
                         :to="{ name: 'survey-recall', params: { surveyId } }"
                         variant="outlined"
                       >
@@ -164,7 +161,6 @@
                     color="info"
                     rounded
                     size="large"
-                    :title="$t('recall.continue')"
                     :to="{ name: 'survey-recall', params: { surveyId } }"
                     variant="outlined"
                   >
@@ -188,11 +184,10 @@
                       <v-btn
                         color="primary"
                         rounded
-                        :title="$t('recall.start._')"
                         :to="{ name: 'survey-recall', params: { surveyId } }"
                         variant="outlined"
                       >
-                        <v-icon class="fa-beat" start>
+                        <v-icon aria-hidden="true" class="fa-beat" start>
                           $start
                         </v-icon>
                         {{ $t('recall.start._') }}
@@ -205,7 +200,6 @@
                     color="primary"
                     rounded
                     size="large"
-                    :title="$t('recall.start._')"
                     :to="{ name: 'survey-recall', params: { surveyId } }"
                     variant="outlined"
                   >
@@ -221,7 +215,7 @@
           </template>
           <!-- Feedback info -->
           <template v-if="feedbackAllowed">
-            <v-list class="list__no-wrap">
+            <v-list class="list__no-wrap" tabindex="-1">
               <v-list-subheader>{{ $t('feedback.info') }}</v-list-subheader>
               <template v-if="feedbackAvailable">
                 <v-list-item link>
