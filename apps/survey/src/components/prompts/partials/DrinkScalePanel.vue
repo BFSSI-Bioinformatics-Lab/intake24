@@ -22,6 +22,7 @@
           :max="sliderMax"
           :min="sliderMin"
           :ripple="false"
+          :step="sliderKeyboardStep"
           :style="sliderVars"
           thumb-color="secondary"
           track-color="primary"
@@ -84,7 +85,7 @@ import type { DrinkwareScaleEntry } from '@intake24/common/types/http/admin';
 
 import { useElementSize } from '@vueuse/core';
 import { debounce } from 'lodash-es';
-import { computed, ref, useTemplateRef, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
 import { useGoTo } from 'vuetify';
 
 import { ImagePlaceholder } from '@intake24/survey/components/elements';
@@ -133,6 +134,7 @@ const cursorInScale = ref(false);
 const sliderMax = ref(props.maxFillLevel * (props.scale.fullLevel - props.scale.emptyLevel));
 const sliderMin = ref(0);
 const sliderStep = ref(Math.round(sliderMax.value / 6));
+const sliderKeyboardStep = computed(() => Math.max(1, Math.round(sliderMax.value / 50)));
 const sliderValue = ref(sliderMax.value * props.modelValue);
 const sliderBottom = computed(() => `${props.scale.emptyLevel * imgScale.value}px`);
 const sliderHeight = computed(() => sliderMax.value * imgScale.value);
@@ -177,6 +179,31 @@ const fillVolume = computed(() =>
 );
 
 const label = computed(() => `${fillVolume.value} ml`);
+let sliderThumbObserver: MutationObserver | null = null;
+
+function syncSliderAriaValueText() {
+  if (!wrapper.value)
+    return;
+
+  const thumb = wrapper.value.querySelector('.v-slider-thumb[role="slider"]');
+
+  if (!thumb)
+    return;
+
+  thumb.setAttribute('aria-valuetext', label.value);
+}
+
+function observeSliderThumb() {
+  if (!wrapper.value)
+    return;
+
+  sliderThumbObserver?.disconnect();
+  sliderThumbObserver = new MutationObserver(() => {
+    syncSliderAriaValueText();
+  });
+  sliderThumbObserver.observe(wrapper.value, { childList: true, subtree: true });
+  syncSliderAriaValueText();
+}
 
 const imgClip = computed(
   () => (props.scale.height - props.scale.fullLevel) * 0.75 * imgScale.value,
@@ -202,13 +229,33 @@ watch(fillLevel, (val) => {
   emit('update:modelValue', val);
 });
 
+watch(label, async () => {
+  await nextTick();
+  syncSliderAriaValueText();
+}, { immediate: true });
+
 watch(
   () => props.open,
-  () => {
+  async (isOpen) => {
     sliderMax.value = props.maxFillLevel * (props.scale.fullLevel - props.scale.emptyLevel);
     sliderValue.value = sliderMax.value * props.modelValue;
+
+    if (isOpen) {
+      await nextTick();
+      syncSliderAriaValueText();
+    }
   },
 );
+
+onMounted(async () => {
+  await nextTick();
+  observeSliderThumb();
+});
+
+onBeforeUnmount(() => {
+  sliderThumbObserver?.disconnect();
+  sliderThumbObserver = null;
+});
 
 function scrollTo() {
   setTimeout(async () => {

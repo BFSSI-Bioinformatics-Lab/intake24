@@ -44,7 +44,7 @@
           :max="1"
           :min="0"
           :ripple="false"
-          :step="0.01"
+          :step="0.05"
           :style="sliderVars"
           thumb-color="secondary"
           track-color="primary"
@@ -107,7 +107,7 @@ import type { DrinkwareScaleV2Response } from '@intake24/common/types/http';
 
 import { useElementSize } from '@vueuse/core';
 import { chunk, maxBy } from 'lodash-es';
-import { computed, ref, useTemplateRef, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
 import { useGoTo } from 'vuetify';
 import { VImg } from 'vuetify/components';
 
@@ -296,6 +296,31 @@ const fillVolume = computed(() => {
 });
 
 const label = computed(() => `${Math.round(fillVolume.value ?? 0)} ml`);
+let sliderThumbObserver: MutationObserver | null = null;
+
+function syncSliderAriaValueText() {
+  if (!wrapper.value)
+    return;
+
+  const thumb = wrapper.value.querySelector('.v-slider-thumb[role="slider"]');
+
+  if (!thumb)
+    return;
+
+  thumb.setAttribute('aria-valuetext', label.value);
+}
+
+function observeSliderThumb() {
+  if (!wrapper.value)
+    return;
+
+  sliderThumbObserver?.disconnect();
+  sliderThumbObserver = new MutationObserver(() => {
+    syncSliderAriaValueText();
+  });
+  sliderThumbObserver.observe(wrapper.value, { childList: true, subtree: true });
+  syncSliderAriaValueText();
+}
 
 function confirm() {
   emit('confirm');
@@ -308,12 +333,32 @@ watch(fillLevel, (val) => {
   emit('update:modelValue', val);
 });
 
+watch(label, async () => {
+  await nextTick();
+  syncSliderAriaValueText();
+}, { immediate: true });
+
 watch(
   () => props.open,
-  () => {
+  async (isOpen) => {
     sliderValue.value = props.modelValue / props.maxFillLevel; // Slider values are always in the range [0, 1]
+
+    if (isOpen) {
+      await nextTick();
+      syncSliderAriaValueText();
+    }
   },
 );
+
+onMounted(async () => {
+  await nextTick();
+  observeSliderThumb();
+});
+
+onBeforeUnmount(() => {
+  sliderThumbObserver?.disconnect();
+  sliderThumbObserver = null;
+});
 
 function scrollTo() {
   setTimeout(async () => {
