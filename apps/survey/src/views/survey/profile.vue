@@ -3,43 +3,55 @@
     <v-row justify="center" :no-gutters="$vuetify.display.mobile">
       <v-col cols="12" md="8" sm="9">
         <v-card v-if="profile" :tile="$vuetify.display.mobile">
-          <v-list lines="two">
-            <v-list-subheader>{{ $t('profile.info') }}</v-list-subheader>
-            <v-list-item>
-              <template #prepend>
-                <v-avatar color="secondary" icon="fas fa-user" />
-              </template>
-              <v-list-item-title>{{ $t('common.name') }}</v-list-item-title>
-              <v-list-item-subtitle>
-                {{ user?.name || $t('common.not.provided') }}
-              </v-list-item-subtitle>
-            </v-list-item>
-            <v-list-item>
-              <template #prepend>
-                <v-avatar color="secondary" icon="fas fa-id-badge" />
-              </template>
-              <v-list-item-title>{{ $t('profile.provider') }}</v-list-item-title>
-              <v-list-item-subtitle>
-                {{ profile.subject.provider || $t('common.not.provided') }}
-              </v-list-item-subtitle>
-            </v-list-item>
-            <v-list-item>
-              <template #prepend>
-                <v-avatar color="secondary" icon="fas fa-key" />
-              </template>
-              <v-list-item-title>{{ $t('profile.providerId') }}</v-list-item-title>
-              <v-list-item-subtitle>
-                {{ profile.subject.providerKey || $t('common.not.provided') }}
-              </v-list-item-subtitle>
-            </v-list-item>
-          </v-list>
+          <v-card-title class="text-h5 font-weight-medium mb-2 pt-4" tag="h1">
+            {{ $t('profile._') }}
+          </v-card-title>
           <v-divider />
-          <v-list lines="two">
-            <v-list-subheader>{{ $t('profile.settings') }}</v-list-subheader>
-            <v-list-item>
-              <template #prepend>
-                <v-avatar color="secondary" icon="fas fa-language" />
-              </template>
+          <div class="px-4 py-2">
+            <h2 class="text-caption text-strong-emphasis font-weight-medium pt-2 pb-1">
+              {{ $t('profile.info') }}
+            </h2>
+            <div class="d-flex align-center py-3">
+              <v-avatar class="me-6" color="secondary" icon="fas fa-user" />
+              <div>
+                <div class="text-subtitle-2">
+                  {{ $t('common.name') }}
+                </div>
+                <div class="text-body-2 text-medium-emphasis">
+                  {{ user?.name || $t('common.not.provided') }}
+                </div>
+              </div>
+            </div>
+            <div class="d-flex align-center py-3">
+              <v-avatar class="me-6" color="secondary" icon="fas fa-id-badge" />
+              <div>
+                <div class="text-subtitle-2">
+                  {{ $t('profile.provider') }}
+                </div>
+                <div class="text-body-2 text-medium-emphasis">
+                  {{ profile.subject.provider || $t('common.not.provided') }}
+                </div>
+              </div>
+            </div>
+            <div class="d-flex align-center py-3">
+              <v-avatar class="me-6" color="secondary" icon="fas fa-key" />
+              <div>
+                <div class="text-subtitle-2">
+                  {{ $t('profile.providerId') }}
+                </div>
+                <div class="text-body-2 text-medium-emphasis">
+                  {{ profile.subject.providerKey || $t('common.not.provided') }}
+                </div>
+              </div>
+            </div>
+          </div>
+          <v-divider />
+          <div class="px-4 py-2">
+            <h2 class="text-caption text-strong-emphasis font-weight-medium pt-2 pb-1">
+              {{ $t('profile.settings') }}
+            </h2>
+            <div class="d-flex align-center py-3">
+              <v-avatar class="me-6" color="secondary" icon="fas fa-language" />
               <v-select
                 class="py-1"
                 hide-details="auto"
@@ -63,8 +75,8 @@
                   {{ item.raw.englishName }}
                 </template>
               </v-select>
-            </v-list-item>
-          </v-list>
+            </div>
+          </div>
           <v-divider />
           <app-info />
           <v-card-text class="mt-6 d-flex justify-center">
