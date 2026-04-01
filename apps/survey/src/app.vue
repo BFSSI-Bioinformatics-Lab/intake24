@@ -246,6 +246,11 @@ watch(navDrawer, async (isOpen) => {
   height: auto !important;
 }
 
+.v-navigation-drawer--bottom.v-navigation-drawer--active {
+  max-height: calc(100dvh - 56px) !important;
+  overflow-y: auto !important;
+}
+
 .app-bar-survey-info {
   background-color: #ffffff;
   border-radius: 4px;

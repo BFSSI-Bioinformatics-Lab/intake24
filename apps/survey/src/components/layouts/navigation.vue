@@ -102,5 +102,10 @@ watch(() => props.modelValue, (val) => {
 <style lang="scss" scoped>
 .bottom-navigation {
   overflow: unset;
+  overflow-x: auto;
+
+  :deep(.v-btn) {
+    min-width: 0 !important;
+  }
 }
 </style>

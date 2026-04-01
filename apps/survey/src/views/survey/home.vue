@@ -11,66 +11,68 @@
             {{ $t('survey.welcome.subtitle') }}
           </v-card-subtitle>
           <v-divider />
-          <v-list class="list__no-wrap" lines="two" tabindex="">
-            <v-list-subheader>{{ $t('survey.info') }}</v-list-subheader>
-            <v-list-item>
-              <v-list-item-title>{{ $t('survey._') }}</v-list-item-title>
-              <v-list-item-subtitle>
+          <div class="px-4 py-2">
+            <h2 class="text-h6 font-weight-medium mb-2 pt-4">
+              {{ $t('survey.info') }}
+            </h2>
+            <div class="py-2">
+              <h3 class="text-subtitle-2">
+                {{ $t('survey._') }}
+              </h3>
+              <div class="text-body-2 text-medium-emphasis">
                 {{ parameters?.name }}
-              </v-list-item-subtitle>
-            </v-list-item>
-            <v-list-item>
-              <v-list-item-title>{{ $t('survey.states._') }}</v-list-item-title>
-              <v-list-item-subtitle>
+              </div>
+            </div>
+            <div class="py-2">
+              <h3 class="text-subtitle-2">
+                {{ $t('survey.states._') }}
+              </h3>
+              <div class="text-body-2 text-medium-emphasis">
                 {{ $t(`survey.states.${parameters?.state}`) }}
-              </v-list-item-subtitle>
-            </v-list-item>
-          </v-list>
+              </div>
+            </div>
+          </div>
           <v-divider />
           <!-- Recall info -->
           <template v-if="recallAllowed">
-            <v-list class="list__no-wrap" tabindex="-1">
-              <v-list-subheader>{{ $t('recall.info') }}</v-list-subheader>
+            <div class="px-4 py-2">
+              <h2 class="text-h6 font-weight-medium mb-2 pt-4">
+                {{ $t('recall.info') }}
+              </h2>
               <template v-if="limitReached">
-                <v-list-item>
-                  <template #prepend>
-                    <v-icon color="error" size="large">
-                      fas fa-ban
-                    </v-icon>
-                  </template>
-                  <v-list-item-title>
+                <div class="d-flex align-center py-3">
+                  <v-icon class="me-6" color="error" size="large">
+                    fas fa-ban
+                  </v-icon>
+                  <div class="text-subtitle-2">
                     {{ $t(`recall.limitReached.${dailyLimitReached ? 'daily' : 'total'}`) }}
-                  </v-list-item-title>
-                </v-list-item>
+                  </div>
+                </div>
               </template>
               <template v-else-if="hasFinished">
-                <v-list-item link>
-                  <template #prepend>
-                    <v-icon color="info" size="large">
-                      $check
-                    </v-icon>
-                  </template>
-                  <v-list-item-title>
+                <div class="d-flex align-center py-3">
+                  <v-icon class="me-6" color="info" size="large">
+                    $check
+                  </v-icon>
+                  <div class="flex-grow-1 text-subtitle-2">
                     {{ $t('recall.finishedAt', { finishedAt: endTime?.toLocaleString() }) }}
-                  </v-list-item-title>
-                  <template #append>
-                    <v-list-item-action v-if="$vuetify.display.mdAndUp">
-                      <v-btn
-                        block
-                        color="primary"
-                        rounded
-                        variant="outlined"
-                        @click.stop="startRecall"
-                      >
-                        <v-icon start>
-                          fas fa-beat fa-play
-                        </v-icon>
-                        {{ $t('recall.start.another') }}
-                      </v-btn>
-                    </v-list-item-action>
-                  </template>
-                </v-list-item>
-                <v-list-item v-if="$vuetify.display.smAndDown" class="justify-end">
+                  </div>
+                  <div v-if="$vuetify.display.mdAndUp">
+                    <v-btn
+                      block
+                      color="primary"
+                      rounded
+                      variant="outlined"
+                      @click.stop="startRecall"
+                    >
+                      <v-icon start>
+                        fas fa-beat fa-play
+                      </v-icon>
+                      {{ $t('recall.start.another') }}
+                    </v-btn>
+                  </div>
+                </div>
+                <div v-if="$vuetify.display.smAndDown" class="d-flex justify-end pb-3">
                   <v-btn
                     block
                     color="primary"
@@ -84,56 +86,52 @@
                     </v-icon>
                     {{ $t('recall.start.another') }}
                   </v-btn>
-                </v-list-item>
+                </div>
               </template>
               <template v-else-if="hasStarted">
-                <v-list-item link>
-                  <template #prepend>
-                    <v-icon color="info" size="large">
-                      $pause
-                    </v-icon>
-                  </template>
-                  <v-list-item-title>
+                <div class="d-flex align-center py-3">
+                  <v-icon class="me-6" color="info" size="large">
+                    $pause
+                  </v-icon>
+                  <div class="flex-grow-1 text-subtitle-2">
                     {{ $t('recall.startedAt', { startedAt: startTime?.toLocaleString() }) }}
-                  </v-list-item-title>
-                  <template #append>
-                    <v-list-item-action v-if="$vuetify.display.mdAndUp" class="align-stretch">
-                      <v-btn
-                        class="me-2"
-                        color="info"
-                        rounded
-                        :to="{ name: 'survey-recall', params: { surveyId } }"
-                        variant="outlined"
-                      >
-                        <v-icon class="fa-beat" start>
-                          $pause
-                        </v-icon>
-                        {{ $t('recall.continue') }}
-                      </v-btn>
-                      <confirm-dialog
-                        :label="$t('recall.abort.label')"
-                        @confirm="cancelRecall"
-                      >
-                        <template #activator="{ props }">
-                          <v-btn
-                            v-bind="props"
-                            color="error"
-                            rounded
-                            :title="$t('recall.abort.label')"
-                            variant="outlined"
-                          >
-                            <v-icon start>
-                              $cancel
-                            </v-icon>
-                            {{ $t('recall.abort._') }}
-                          </v-btn>
-                        </template>
-                        {{ $t('recall.abort.confirm') }}
-                      </confirm-dialog>
-                    </v-list-item-action>
-                  </template>
-                </v-list-item>
-                <v-list-item v-if="$vuetify.display.smAndDown" class="justify-sm-end">
+                  </div>
+                  <div v-if="$vuetify.display.mdAndUp" class="d-flex align-stretch">
+                    <v-btn
+                      class="me-2"
+                      color="info"
+                      rounded
+                      :to="{ name: 'survey-recall', params: { surveyId } }"
+                      variant="outlined"
+                    >
+                      <v-icon class="fa-beat" start>
+                        $pause
+                      </v-icon>
+                      {{ $t('recall.continue') }}
+                    </v-btn>
+                    <confirm-dialog
+                      :label="$t('recall.abort.label')"
+                      @confirm="cancelRecall"
+                    >
+                      <template #activator="{ props }">
+                        <v-btn
+                          v-bind="props"
+                          color="error"
+                          rounded
+                          :title="$t('recall.abort.label')"
+                          variant="outlined"
+                        >
+                          <v-icon start>
+                            $cancel
+                          </v-icon>
+                          {{ $t('recall.abort._') }}
+                        </v-btn>
+                      </template>
+                      {{ $t('recall.abort.confirm') }}
+                    </confirm-dialog>
+                  </div>
+                </div>
+                <div v-if="$vuetify.display.smAndDown" class="d-flex justify-sm-end pb-3">
                   <confirm-dialog
                     :label="$t('recall.abort.label')"
                     @confirm="cancelRecall"
@@ -169,33 +167,31 @@
                     </v-icon>
                     {{ $t('recall.continue') }}
                   </v-btn>
-                </v-list-item>
+                </div>
               </template>
               <template v-else>
-                <v-list-item link>
-                  <template #prepend>
-                    <v-icon color="info" size="large">
-                      $start
-                    </v-icon>
-                  </template>
-                  <v-list-item-title>{{ $t('recall.none') }}</v-list-item-title>
-                  <template #append>
-                    <v-list-item-action v-if="$vuetify.display.mdAndUp">
-                      <v-btn
-                        color="primary"
-                        rounded
-                        :to="{ name: 'survey-recall', params: { surveyId } }"
-                        variant="outlined"
-                      >
-                        <v-icon aria-hidden="true" class="fa-beat" start>
-                          $start
-                        </v-icon>
-                        {{ $t('recall.start._') }}
-                      </v-btn>
-                    </v-list-item-action>
-                  </template>
-                </v-list-item>
-                <v-list-item v-if="$vuetify.display.smAndDown" class="justify-end">
+                <div class="d-flex align-center py-3">
+                  <v-icon class="me-6" color="info" size="large">
+                    $start
+                  </v-icon>
+                  <div class="flex-grow-1 text-subtitle-2">
+                    {{ $t('recall.none') }}
+                  </div>
+                  <div v-if="$vuetify.display.mdAndUp">
+                    <v-btn
+                      color="primary"
+                      rounded
+                      :to="{ name: 'survey-recall', params: { surveyId } }"
+                      variant="outlined"
+                    >
+                      <v-icon aria-hidden="true" class="fa-beat" start>
+                        $start
+                      </v-icon>
+                      {{ $t('recall.start._') }}
+                    </v-btn>
+                  </div>
+                </div>
+                <div v-if="$vuetify.display.smAndDown" class="d-flex justify-end pb-3">
                   <v-btn
                     color="primary"
                     rounded
@@ -208,40 +204,40 @@
                     </v-icon>
                     {{ $t('recall.start._') }}
                   </v-btn>
-                </v-list-item>
+                </div>
               </template>
-            </v-list>
+            </div>
             <v-divider />
           </template>
           <!-- Feedback info -->
           <template v-if="feedbackAllowed">
-            <v-list class="list__no-wrap" tabindex="-1">
-              <v-list-subheader>{{ $t('feedback.info') }}</v-list-subheader>
+            <div class="px-4 py-2">
+              <h2 class="text-h6 font-weight-medium mb-2 pt-4">
+                {{ $t('feedback.info') }}
+              </h2>
               <template v-if="feedbackAvailable">
-                <v-list-item link>
-                  <template #prepend>
-                    <v-icon color="info" size="large">
-                      $feedback
-                    </v-icon>
-                  </template>
-                  <v-list-item-title>{{ $t('feedback.status.available') }}</v-list-item-title>
-                  <template #append>
-                    <v-list-item-action v-if="$vuetify.display.mdAndUp">
-                      <v-btn
-                        color="info"
-                        rounded
-                        :to="{ name: 'feedback-home', params: { surveyId } }"
-                        variant="outlined"
-                      >
-                        <v-icon start>
-                          $feedback
-                        </v-icon>
-                        {{ $t(`feedback._`) }}
-                      </v-btn>
-                    </v-list-item-action>
-                  </template>
-                </v-list-item>
-                <v-list-item v-if="$vuetify.display.smAndDown" class="justify-end">
+                <div class="d-flex align-center py-3">
+                  <v-icon class="me-6" color="info" size="large">
+                    $feedback
+                  </v-icon>
+                  <div class="flex-grow-1 text-subtitle-2">
+                    {{ $t('feedback.status.available') }}
+                  </div>
+                  <div v-if="$vuetify.display.mdAndUp">
+                    <v-btn
+                      color="info"
+                      rounded
+                      :to="{ name: 'feedback-home', params: { surveyId } }"
+                      variant="outlined"
+                    >
+                      <v-icon start>
+                        $feedback
+                      </v-icon>
+                      {{ $t(`feedback._`) }}
+                    </v-btn>
+                  </div>
+                </div>
+                <div v-if="$vuetify.display.smAndDown" class="d-flex justify-end pb-3">
                   <v-btn
                     color="info"
                     rounded
@@ -254,27 +250,25 @@
                     </v-icon>
                     {{ $t(`feedback._`) }}
                   </v-btn>
-                </v-list-item>
+                </div>
               </template>
-              <v-list-item v-else link>
-                <template #prepend>
-                  <v-icon color="info" size="large">
-                    $info
-                  </v-icon>
-                </template>
-                <v-list-item-title>
+              <div v-else class="d-flex align-center py-3">
+                <v-icon class="me-6" color="info" size="large">
+                  $info
+                </v-icon>
+                <div class="text-subtitle-2">
                   {{
                     $t('feedback.status.lowRecalls', {
                       minRecalls: parameters?.numberOfSubmissionsForFeedback,
                     })
                   }}
-                </v-list-item-title>
-              </v-list-item>
-            </v-list>
+                </div>
+              </div>
+            </div>
             <v-divider />
           </template>
           <!-- Past recalls -->
-          <v-card-subtitle class="my-4">
+          <v-card-subtitle class="my-4" tag="h2">
             {{ $t('recall.submissions.past') }}
           </v-card-subtitle>
           <v-card-text class="py-0">
@@ -297,18 +291,14 @@
                 </v-timeline-item>
               </v-timeline>
             </template>
-            <v-list v-else class="list__no-wrap">
-              <v-list-item>
-                <template #prepend>
-                  <v-icon size="large">
-                    $survey
-                  </v-icon>
-                </template>
-                <v-list-item-title>
-                  {{ $t('recall.submissions.none') }}
-                </v-list-item-title>
-              </v-list-item>
-            </v-list>
+            <div v-else class="d-flex align-center px-4 py-3">
+              <v-icon class="me-6" size="large">
+                $survey
+              </v-icon>
+              <div class="text-subtitle-2">
+                {{ $t('recall.submissions.none') }}
+              </div>
+            </div>
           </v-card-text>
         </v-card>
       </v-col>
