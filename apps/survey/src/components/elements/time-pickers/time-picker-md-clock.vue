@@ -1,12 +1,13 @@
 <template>
-  <v-time-picker
-    v-model="state"
-    :allowed-minutes="allowedMinutes"
-    :ampm-in-title="prompt.amPmToggle"
-    class="time-picker pa-0 mx-auto"
-    :format="prompt.format"
-    :landscape="$vuetify.display.smAndUp"
-  />
+  <div ref="timePickerRoot" class="time-picker pa-0 mx-auto">
+    <v-time-picker
+      v-model="state"
+      :allowed-minutes="allowedMinutes"
+      :ampm-in-title="prompt.amPmToggle"
+      :format="prompt.format"
+      :landscape="$vuetify.display.smAndUp"
+    />
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -14,7 +15,7 @@ import type { PropType } from 'vue';
 
 import type { Prompts } from '@intake24/common/prompts';
 
-import { computed } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 
 const props = defineProps({
   prompt: {
@@ -28,6 +29,26 @@ const state = defineModel('modelValue', { type: String as PropType<string | null
 const allowedMinutes = computed(
   () => (minutes: number) => minutes % props.prompt.allowedMinutes === 0,
 );
+
+const timePickerRoot = ref<HTMLElement | null>(null);
+
+function removeLabelledby() {
+  const root = timePickerRoot.value;
+
+  if (!root)
+    return;
+
+  root.querySelectorAll<HTMLInputElement>('input[aria-labelledby]').forEach((input) => {
+    const labelledBy = input.getAttribute('aria-labelledby');
+    if (labelledBy)
+      input.removeAttribute('aria-labelledby');
+  });
+}
+
+onMounted(async () => {
+  await nextTick();
+  removeLabelledby();
+});
 </script>
 
 <style lang="scss">

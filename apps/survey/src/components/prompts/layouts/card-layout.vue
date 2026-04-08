@@ -10,6 +10,9 @@
       </slot>
     </v-card>
     <v-card :tile="$vuetify.display.mobile">
+      <v-card-title tag="h1">
+        {{ i18n.name }}
+      </v-card-title>
       <slot name="prompt-description">
         <div
           v-if="i18n.description"

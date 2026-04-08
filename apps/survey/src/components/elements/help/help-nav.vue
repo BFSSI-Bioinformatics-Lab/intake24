@@ -11,7 +11,7 @@
       <v-btn
         v-if="!$vuetify.display.mobile"
         v-bind="props"
-        color="grey"
+        class="help-btn"
         :title="$t('common.help.request.title')"
         variant="flat"
       >

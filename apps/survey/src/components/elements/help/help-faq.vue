@@ -19,7 +19,7 @@
         </v-btn>
         <v-btn
           v-else
-          color="grey"
+          class="help-btn"
           v-bind="props"
           :title="$t('common.help.faqs.title')"
           variant="flat"

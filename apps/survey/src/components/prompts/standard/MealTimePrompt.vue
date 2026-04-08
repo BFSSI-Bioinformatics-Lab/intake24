@@ -9,13 +9,11 @@
     </v-card-text>
     <template #actions>
       <v-btn
-        :title="promptI18n.no"
         @click.stop="action('cancel')"
       >
         {{ promptI18n.no }}
       </v-btn>
       <v-btn
-        :title="promptI18n.yes"
         variant="flat"
         @click.stop="action('next')"
       >
