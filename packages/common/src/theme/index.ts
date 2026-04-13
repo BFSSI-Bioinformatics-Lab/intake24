@@ -6,7 +6,7 @@ export const colors = {
   'primary-lighten-3': '#facfae',
   'primary-lighten-2': '#f6ad7b',
   'primary-lighten-1': '#f18046',
-  primary: '#EE672D',
+  primary: '#26374a',
   'primary-darken-1': '#de4618',
   'primary-darken-2': '#b83316',
   'primary-darken-3': '#932b19',

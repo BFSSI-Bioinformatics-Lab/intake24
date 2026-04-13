@@ -10,6 +10,9 @@ import { errorHandler, mountInterceptors, useHttp } from './services';
 import { bootstrapAnalytics, cookieConsentConfig, cookieConsentPlugin } from '@intake24/ui';
 import { createManager } from '@vue-youtube/core';
 import { useAuth } from './stores';
+import { GcdsComponents } from '@gcds-core/components-vue';
+import '@gcds-core/components-vue/gcds.css';
+import '@gcds-core/css-shortcuts/dist/gcds-css-shortcuts.min.css';
 
 const app = createApp(App);
 
@@ -25,6 +28,7 @@ app.use(router);
 app.use(pinia);
 app.use(i18n);
 app.use(vuetify);
+app.use(GcdsComponents);
 app.use(createManager({ deferLoading: { enabled: true, autoLoad: true } }));
 app.use(cookieConsentPlugin, cookieConsentConfig());
 bootstrapAnalytics(app, router);
