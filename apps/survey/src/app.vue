@@ -87,6 +87,7 @@
         <app-nav-footer />
       </template>
     </v-navigation-drawer>
+    <gcds-header skip-to-href="#main-content" />
     <v-app-bar class="px-2 px-md-0" color="primary" flat>
       <v-app-bar-nav-icon
         v-if="!$vuetify.display.mobile"
@@ -111,23 +112,25 @@
         </div>
         <template v-if="!$vuetify.display.mobile">
           <v-spacer />
-          <v-btn
-            v-if="surveyId"
-            :title="$t('profile._')"
-            :to="{ name: 'survey-profile', params: { surveyId } }"
-          >
-            <span>{{ $t('profile._') }}</span>
-            <v-icon end icon="$profile" />
-          </v-btn>
+          <router-link v-if="surveyId" :to="{ name: 'survey-profile', params: { surveyId } }">
+            <gcds-button
+              button-role="primary"
+              size="small"
+              :title="$t('profile._')"
+            >
+              <span>{{ $t('profile._') }}</span>
+              <v-icon end icon="$profile" />
+            </gcds-button>
+          </router-link>
           <confirm-dialog
             :label="$t('common.logout._')"
             @confirm="logout"
           >
             <template #activator="{ props }">
-              <v-btn variant="text" v-bind="props">
-                <span>{{ $t('common.logout._') }}</span>
+              <gcds-button v-bind="props" button-role="danger" size="small">
+                {{ $t('common.logout._') }}
                 <v-icon end icon="$logout" />
-              </v-btn>
+              </gcds-button>
             </template>
             {{ $t('common.logout.text') }}
           </confirm-dialog>
@@ -137,7 +140,7 @@
         <v-app-bar-title>{{ $t('common._') }}</v-app-bar-title>
       </template>
     </v-app-bar>
-    <v-main>
+    <v-main id="main-content">
       <router-view />
     </v-main>
     <navigation
@@ -152,7 +155,11 @@
     />
     <service-worker />
     <message-box />
-    <app-footer v-if="!$vuetify.display.mobile || !loggedIn" />
+    <gcds-footer
+      contextual-heading="Intake24"
+      contextual-links="{ &quot;Optional Link #1&quot;: &quot;#&quot;, &quot;Optional Link #2&quot;: &quot;#&quot;, &quot;Optional Link #3&quot;: &quot;#&quot; }"
+      display="compact"
+    />
   </v-app>
 </template>
 
@@ -164,7 +171,7 @@ import { useLocale } from 'vuetify';
 
 import { Navigation } from '@intake24/survey/components/layouts';
 import { sendGtmEvent } from '@intake24/survey/util';
-import { AppFooter, AppNavFooter, ConfirmDialog, Loader, MessageBox, ServiceWorker, useHttp, useI18n, useLanguage } from '@intake24/ui';
+import { AppNavFooter, ConfirmDialog, Loader, MessageBox, ServiceWorker, useHttp, useI18n, useLanguage } from '@intake24/ui';
 
 import { useAuth, useSurvey } from './stores';
 
@@ -212,6 +219,10 @@ watch(title, () => {
 
 .v-navigation-drawer.v-navigation-drawer--active {
   height: auto !important;
+}
+
+.v-app-bar {
+  position: relative !important;
 }
 
 .app-bar-survey-info {
