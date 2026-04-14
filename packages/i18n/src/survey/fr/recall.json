@@ -40,6 +40,7 @@
   },
   "menu": {
     "title": "Panneau d'avancement",
+    "editEntry": "Modifier {item}",
     "mealSuggested": "Ce repas est suggéré par le système mais vous n'avez pas encore confirmé que vous l'avez consommé",
     "food": {
       "delete": "Supprimer l'aliment",

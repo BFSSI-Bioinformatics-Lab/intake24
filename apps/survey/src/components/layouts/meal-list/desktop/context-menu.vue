@@ -1,8 +1,8 @@
 <template>
   <div>
-    <v-menu :close-delay="250" close-on-content-click open-on-hover :persistent="false">
+    <v-menu :close-delay="250" close-on-content-click :persistent="false">
       <template #activator="{ props: cmProps }">
-        <v-icon v-bind="cmProps" size="small" @click.stop>
+        <v-icon v-bind="cmProps" :aria-label="$t('recall.menu.editEntry', { item: entityName })" size="small" @click.stop>
           $edit
         </v-icon>
       </template>

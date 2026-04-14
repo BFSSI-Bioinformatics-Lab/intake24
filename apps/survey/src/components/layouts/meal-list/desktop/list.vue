@@ -18,7 +18,6 @@
       <v-btn
         block
         color="primary"
-        :title="$t('recall.menu.meal.add')"
         variant="tonal"
         @click="action('addMeal')"
       >
