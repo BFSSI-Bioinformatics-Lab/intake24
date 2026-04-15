@@ -4,7 +4,6 @@
     :color="color"
     :disabled="disabled"
     size="large"
-    :title="currentLabel"
     variant="flat"
   >
     <v-icon v-if="icon" start>

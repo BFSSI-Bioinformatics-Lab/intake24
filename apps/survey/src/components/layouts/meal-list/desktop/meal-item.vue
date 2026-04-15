@@ -12,7 +12,7 @@
           <span v-if="mealTime && !meal.flags.includes('meal-time:hidden')" class="text-body-2">
             {{ mealTime }}
           </span>
-          <v-tooltip v-else-if="!mealTime" :aria-label="$t('recall.menu.mealSuggested')" location="bottom">
+          <v-tooltip v-else-if="!mealTime" location="bottom">
             <template #activator="{ props }">
               <v-icon size="small" v-bind="props">
                 $question
@@ -26,7 +26,7 @@
         </v-list-item-action>
       </template>
     </v-list-item>
-    <v-divider />
+    <!-- <v-divider /> -->
     <template v-if="meal.foods.length">
       <food-item
         v-for="food in meal.foods"
@@ -34,7 +34,7 @@
         v-bind="{ food, meal, selectedFoodId }"
         @action="action"
       />
-      <v-divider />
+      <!-- <v-divider /> -->
     </template>
   </div>
 </template>
