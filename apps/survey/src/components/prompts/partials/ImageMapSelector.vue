@@ -51,18 +51,22 @@
             </v-chip>
           </slot>
         </div>
-        <svg ref="svg">
+        <svg ref="svg" focusable="false" tabindex="-1">
           <filter id="polygon-blur">
             <feGaussianBlur in="SourceGraphic" stdDeviation="4" />
           </filter>
           <polygon
             v-for="(object, idx) in objects"
             :key="idx"
+            :aria-label="labels.objects?.[idx]"
             class="guide-drawer-polygon"
             :class="{ active: idx === index }"
             :points="object.polygon"
+            role="button"
+            tabindex="0"
             @click.stop="select(idx, object.id)"
-            @keypress.stop="select(idx, object.id)"
+            @keydown.enter.prevent="select(idx, object.id)"
+            @keydown.space.prevent="select(idx, object.id)"
             @mouseleave="hoverIndex = undefined"
             @mouseover="hoverIndex = idx"
           />
@@ -199,12 +203,14 @@ onMounted(() => {
         filter: url(#polygon-blur);
       }
 
-      &:hover {
+      &:hover,
+      &:focus {
         stroke-width: 8;
         stroke: variables.$info;
         stroke-linecap: round;
         stroke-linejoin: round;
         filter: url(#polygon-blur);
+        outline: none;
       }
     }
   }

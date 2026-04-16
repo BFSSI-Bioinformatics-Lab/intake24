@@ -23,15 +23,19 @@
               </v-chip>
             </div>
             <img :src="imageMapData.baseImageUrl" :width="width">
-            <svg v-bind="{ height, width }">
+            <svg v-bind="{ height, width }" focusable="false" tabindex="-1">
               <polygon
                 v-for="(object, idx) in objects"
                 :key="idx"
+                :aria-label="label"
                 class="guide-drawer-polygon"
                 :class="{ active: idx === index }"
                 :points="object.polygon"
+                role="button"
+                tabindex="0"
                 @click.stop="select(idx, object.id)"
-                @keypress.stop="select(idx, object.id)"
+                @keydown.enter.prevent="select(idx, object.id)"
+                @keydown.space.prevent="select(idx, object.id)"
               />
             </svg>
           </pinch-scroll-zoom>
