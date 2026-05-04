@@ -58,6 +58,7 @@ function authenticationService({
   jwtService,
   logger: globalLogger,
   signInService,
+  codeProvider,
   duoProvider,
   otpProvider,
   fidoProvider,
@@ -69,6 +70,7 @@ function authenticationService({
   | 'jwtService'
   | 'logger'
   | 'signInService'
+  | 'codeProvider'
   | 'duoProvider'
   | 'otpProvider'
   | 'fidoProvider'
@@ -87,20 +89,19 @@ function authenticationService({
    * @param {UserPassword} [userPassword]
    * @returns {Promise<boolean>}
    */
-  const verifyPassword = async (
-    password: string,
-    userPassword?: UserPassword,
-  ): Promise<boolean> => {
-    if (!userPassword)
-      throw new Error('Password login not enabled for this user.');
+  const verifyPassword = async (password: string, userPassword?: UserPassword | null): Promise<boolean> => {
+    if (!userPassword) {
+      logger.warn('Password login not enabled for this user.');
+      return false;
+    }
 
-    const { passwordHasher, passwordSalt, passwordHash } = userPassword;
+    const { hasher, salt, hash } = userPassword;
 
-    const algorithm = supportedAlgorithms.find(a => a.id === passwordHasher);
+    const algorithm = supportedAlgorithms.find(a => a.id === hasher);
     if (!algorithm)
-      throw new Error(`Password algorithm '${passwordHasher}' not supported.`);
+      throw new Error(`Password algorithm '${hasher}' not supported.`);
 
-    return algorithm.verify(password, { salt: passwordSalt, hash: passwordHash });
+    return algorithm.verify(password, { salt, hash });
   };
 
   /**
@@ -135,7 +136,7 @@ function authenticationService({
       throw new NotFoundError('No MFA devices found.');
 
     const { id: deviceId, provider } = device;
-    const providers = { duo: duoProvider, otp: otpProvider, fido: fidoProvider };
+    const providers = { code: codeProvider, duo: duoProvider, otp: otpProvider, fido: fidoProvider };
 
     const challenge = await providers[provider].authenticationChallenge(device);
 
@@ -558,6 +559,9 @@ function authenticationService({
       } = device;
 
       switch (provider) {
+        case 'code':
+          await codeProvider.authenticationVerification({ deviceId, secret, token: body.token });
+          break;
         case 'duo':
           await duoProvider.authenticationVerification({ email, token: body.token });
           break;

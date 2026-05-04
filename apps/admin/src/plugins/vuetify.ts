@@ -1,6 +1,7 @@
 import type { IconAliases } from 'vuetify';
 
 import { createVuetify } from 'vuetify';
+import { VAvatar } from 'vuetify/components';
 import * as directives from 'vuetify/directives';
 import { aliases, fa } from 'vuetify/iconsets/fa';
 import { VDateInput } from 'vuetify/labs/VDateInput';
@@ -10,6 +11,7 @@ import { colors } from '@intake24/common/theme';
 
 import resources from '../router/resources';
 
+// @ts-expect-error - will be fixed in next release
 import 'vuetify/styles';
 
 const resourceIcons = resources.reduce<Partial<IconAliases>>((acc, resource) => {
@@ -24,6 +26,9 @@ export default createVuetify({
     VStepperVerticalItem,
   },
   directives,
+  aliases: {
+    VDragAndDropHandle: VAvatar,
+  },
   defaults: {
     VAlert: {
       variant: 'tonal',
@@ -39,6 +44,11 @@ export default createVuetify({
     VCombobox: {
       hideDetails: 'auto',
       variant: 'outlined',
+    },
+    VDragAndDropHandle: {
+      class: ['drag-and-drop__handle'],
+      icon: '$handle',
+      variant: 'plain',
     },
     VDataTableServer: {
       VBtn: {
@@ -70,6 +80,9 @@ export default createVuetify({
     VNumberInput: {
       hideDetails: 'auto',
       variant: 'outlined',
+    },
+    VOtpInput: {
+      hideDetails: 'auto',
     },
     VSwitch: {
       hideDetails: 'auto',
@@ -131,6 +144,7 @@ export default createVuetify({
       upload: 'fas fa-upload',
       user: 'fas fa-user-circle',
       // MFA Provider icons
+      code: 'fas fa-key',
       duo: 'fas fa-mobile-screen-button',
       fido: 'fas fa-microchip',
       otp: 'fas fa-stopwatch',
