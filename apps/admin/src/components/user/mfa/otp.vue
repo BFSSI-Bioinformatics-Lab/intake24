@@ -1,7 +1,7 @@
 <template>
   <v-stepper-vertical v-model="progress" flat hide-actions>
     <template #default="{ step }">
-      <v-stepper-vertical-item :complete="step > 1" :title="$t('user.mfa.devices.init.title')" value="1">
+      <v-stepper-vertical-item :complete="step > 1" :title="$t('user.mfa.providers.otp.challenge.title')" value="1">
         <v-row>
           <v-col cols="12" sm="6">
             <v-btn
@@ -12,38 +12,35 @@
               rounded
               @click="challenge"
             >
-              {{ $t('user.mfa.devices.init._') }}
+              {{ $t('user.mfa.providers.otp.challenge._') }}
             </v-btn>
           </v-col>
         </v-row>
       </v-stepper-vertical-item>
-      <v-stepper-vertical-item :complete="step > 2" :title="$t('user.mfa.devices.qr.title')" value="2">
+      <v-stepper-vertical-item :complete="step > 2" :title="$t('user.mfa.providers.otp.verify.title')" value="2">
         <v-row>
           <v-col cols="12" order="last" order-sm="first" sm="6">
             <v-form @submit.prevent="verify">
+              <p class="mb-4 text-subtitle-2">
+                {{ $t('user.mfa.providers.otp.verify.text') }}
+              </p>
               <v-text-field
                 v-model="data.name"
-                class="my-2"
+                class="mb-4"
                 :error-messages="errors.get('name')"
-                hide-details="auto"
                 :label="$t('user.mfa.devices.name._')"
                 name="name"
-                variant="outlined"
                 @update:model-value="errors.clear('name')"
               />
-              <p class="my-2 text-subtitle-2">
-                {{ $t('user.mfa.devices.qr.text') }}
-              </p>
               <v-otp-input
                 v-model="data.token"
                 :error-messages="errors.get('token')"
-                hide-details="auto"
                 length="6"
                 name="token"
-                @input="errors.clear('token')"
+                @update:model-value="errors.clear('token')"
               />
               <v-btn block class="my-4" color="secondary" rounded type="submit">
-                {{ $t('user.mfa.devices.verify') }}
+                {{ $t('user.mfa.providers.otp.verify._') }}
               </v-btn>
             </v-form>
           </v-col>
@@ -52,7 +49,20 @@
           </v-col>
         </v-row>
       </v-stepper-vertical-item>
-      <v-stepper-vertical-item :complete="step >= 3" :title="$t('user.mfa.devices.registered')" value="3" />
+      <v-stepper-vertical-item
+        :complete="step >= 3"
+        :title="$t('user.mfa.providers.code.finalize.title')"
+        value="3"
+      >
+        <div class="d-flex flex-column ga-4">
+          <div>
+            {{ $t('user.mfa.providers.code.finalize.text') }}
+          </div>
+          <v-btn class="align-self-end" color="info" rounded variant="text" @click="emit('close')">
+            {{ $t('common.action.close') }}
+          </v-btn>
+        </div>
+      </v-stepper-vertical-item>
     </template>
   </v-stepper-vertical>
 </template>
@@ -70,13 +80,13 @@ import { useHttp } from '@intake24/admin/services';
 
 defineOptions({ name: 'OtpDevice' });
 
-const emit = defineEmits(['registered']);
+const emit = defineEmits(['close', 'registered']);
 
 const http = useHttp();
 
 const url = 'admin/user/mfa/providers/otp';
 const progress = ref(1);
-const { data, errors, post, reset } = useForm({ data: { challengeId: '', name: 'My OTP device', token: '' } });
+const { data, errors, post, reset } = useForm({ data: { challengeId: '', name: 'OTP device', token: '' } });
 
 const regChallenge = ref<OTPRegistrationChallenge | null>(null);
 

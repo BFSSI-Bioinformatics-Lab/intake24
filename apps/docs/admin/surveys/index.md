@@ -6,23 +6,17 @@
 
 Survey section allows to manage surveys.
 
-## Detail
-
-Detail tab displays selected survey info.
-
-## Create / Edit
-
-Edit tab allows to modify selected survey.
+## Properties
 
 - `Survey ID` - Short and unique, ideally slug-based string. It forms public URL of the login / authentication links.
 
 - `Survey name` - User friendly name to display participant, e.g. on survey login / dashboard pages
 
-- `Locale` - Associated [locale](/admin/localization/locales)
+- `Locale` - Associated [locale](/admin/locales/)
 
 - `Scheme` - Associated [survey scheme](/admin/surveys/schemes)
 
-- `FAQ` - Associated [FAQ](/admin/surveys/faqs)
+- `FAQ` - Associated [FAQ](/admin/system/faqs)
 
 - `Start date` - Start date of the survey
 
