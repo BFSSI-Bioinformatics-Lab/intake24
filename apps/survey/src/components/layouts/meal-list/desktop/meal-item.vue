@@ -2,6 +2,7 @@
   <div>
     <v-list-item
       :class="{ 'selected': isSelected || selectedFoodInMeal, 'selected-food': selectedFoodInMeal }"
+      tabindex="0"
       @click="action('selectMeal', meal.id)"
     >
       <v-list-item-title class="text-body-2 font-weight-medium text-wrap">

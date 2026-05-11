@@ -3,6 +3,7 @@
     <v-list-item
       :class="{ 'selected': food.id === selectedFoodId, 'ps-4': !linked, 'ps-8': linked }"
       link
+      tabindex="0"
       @click="action('selectFood', food.id)"
     >
       <v-list-item-title class="text-body-2 text-wrap d-flex flex-column">

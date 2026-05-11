@@ -1,6 +1,6 @@
 <template>
   <v-card>
-    <v-card-title class="pa-4">
+    <v-card-title class="pa-4" tag="h2">
       {{ $t('recall.menu.title') }}
     </v-card-title>
     <v-divider />
