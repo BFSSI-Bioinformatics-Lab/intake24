@@ -7,6 +7,7 @@
     <v-chip
       v-for="(unit, index) in units"
       :key="unit.name"
+      aria-hidden="true"
       class="px-6 font-weight-medium"
       color="primary"
       :value="index === selectedIndex"

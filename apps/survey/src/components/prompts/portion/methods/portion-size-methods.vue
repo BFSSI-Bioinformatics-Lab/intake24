@@ -15,13 +15,18 @@
         >
           <v-item v-slot="{ isSelected, toggle }" :value="availableMethod.index">
             <v-card
+              :aria-pressed="isSelected"
               border
               border-color="secondary"
               class="d-flex flex-column justify-space-between"
               :elevation="isSelected ? '4' : undefined"
               height="100%"
               hover
+              role="button"
+              tabindex="0"
               @click="toggle"
+              @keydown.enter.prevent="toggle"
+              @keydown.space.prevent="toggle"
             >
               <component :is="`${availableMethod.method}-method`" :method="availableMethod" />
               <v-card-actions
