@@ -1,5 +1,5 @@
 <template>
-  <v-img :aspect-ratio="3 / 2" cover :src="method.imageUrl">
+  <v-img alt="" :aspect-ratio="3 / 2" cover :src="method.imageUrl">
     <template #placeholder>
       <image-placeholder />
     </template>
