@@ -64,7 +64,9 @@
           </template>
         </v-expansion-panel-title>
         <v-expansion-panel-text>
-          <quantity-card
+          <component
+            :is="quantityCardComponent"
+            v-bind="quantityCardProps"
             v-model="state.portionSize.quantity"
             v-model:confirmed="state.quantityConfirmed"
             @update:confirmed="confirmQuantity"
@@ -107,6 +109,8 @@ import {
   Next,
   QuantityBadge,
   QuantityCard,
+  QuantityCardAccessible,
+  QuantityCardAccessible2,
   useFetchImageData,
   useLabels,
   usePanel,
@@ -146,6 +150,20 @@ const selectedFoodLabel = computed(() => {
 
   return labels.value.objects[state.value.portionSize.objectIndex] || foodName.value;
 });
+
+const quantityCardComponent = computed(() => {
+  switch (props.prompt.quantityCard) {
+    case 'accessible':
+      return QuantityCardAccessible;
+    case 'accessible2':
+      return QuantityCardAccessible2;
+    default:
+      return QuantityCard;
+  }
+});
+const quantityCardProps = computed(() => (
+  props.prompt.quantityCard === 'accessible2' ? { foodLabel: selectedFoodLabel.value } : {}
+));
 
 const objectValid = computed(() => (
   state.value.portionSize.objectId !== undefined

@@ -173,6 +173,9 @@ export const linkedQuantity = z.object({
 });
 export type LinkedQuantity = z.infer<typeof linkedQuantity>;
 
+export const guideImageQuantityCards = ['classic', 'accessible', 'accessible2'] as const;
+export type GuideImageQuantityCard = (typeof guideImageQuantityCards)[number];
+
 export const reviewOptions = [false, 'scroll', 'checkbox', 'onecheckbox'] as const;
 export type ReviewOptions = (typeof reviewOptions)[number];
 
@@ -300,6 +303,7 @@ const guideImagePrompt = z.object({
   component: z.literal('guide-image-prompt'),
   imageMap,
   linkedQuantity,
+  quantityCard: z.enum(guideImageQuantityCards).default('classic'),
 });
 
 const milkInAHotDrinkPrompt = z.object({

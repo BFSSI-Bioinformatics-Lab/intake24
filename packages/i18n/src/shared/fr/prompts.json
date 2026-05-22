@@ -372,7 +372,14 @@
     "and": "et",
     "confirm": "Valider",
     "more": "Plus",
-    "less": "Moins"
+    "less": "Moins",
+    "accessible2": {
+      "food": "aliment",
+      "none": "Aucune",
+      "whole": "Indiquez combien de {food} entiers vous avez consommés",
+      "fraction": "Indiquez combien de fractions de {food} vous avez consommées (si nécessaire) :",
+      "currentSelection": "La sélection actuelle est {selection}"
+    }
   },
   "portionSizeOption": {
     "name": "Méthode de quantification",

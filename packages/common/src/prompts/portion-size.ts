@@ -73,6 +73,7 @@ export const guideImagePrompt: Prompts['guide-image-prompt'] = copy({
     parent: [{ code: 'BRED' }],
     source: ['BTTR'],
   },
+  quantityCard: 'classic',
 });
 
 export const milkInAHotDrinkPrompt: Prompts['milk-in-a-hot-drink-prompt'] = copy({
