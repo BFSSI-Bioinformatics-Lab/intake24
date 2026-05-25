@@ -1,13 +1,12 @@
 <template>
   <v-row justify="center">
-    <v-col cols="12" md="8" sm="10">
-      <div class="d-flex flex-column ga-3">
+    <v-col cols="auto">
+      <div class="d-flex flex-column align-center">
         <div v-if="showAll" class="pa-2">
           <v-btn block @click.stop="setAll">
             {{ $t('prompts.linkedAmount.all') }}
           </v-btn>
         </div>
-
         <v-card class="pa-4" variant="outlined">
           <div v-if="whole" class="d-flex flex-column ga-2">
             <label
@@ -19,12 +18,11 @@
             </label>
             <v-number-input
               :id="wholeInputId"
+              v-model="currentWhole"
               :aria-labelledby="wholeInputLabelId"
               :max="maxWhole"
               :min="minWhole"
-              :model-value="currentWhole"
               variant="outlined"
-              @update:model-value="updateWhole"
             />
           </div>
 
@@ -38,22 +36,19 @@
             </label>
             <v-select
               :id="fractionInputId"
+              v-model="currentFraction"
               :aria-labelledby="fractionInputLabelId"
-              density="comfortable"
-              hide-details="auto"
               :items="fractionOptions"
-              :model-value="fractionInput"
               variant="outlined"
-              @update:model-value="updateFraction"
             />
           </div>
         </v-card>
 
-        <p aria-atomic="true" aria-live="polite" class="text-body-2" role="status">
+        <p aria-atomic="true" aria-live="polite" class="sr-only" role="status">
           {{ $t('prompts.quantity.accessible2.currentSelection', { selection: quantitySummary }) }}
         </p>
 
-        <div v-if="confirm" class="pt-1">
+        <div v-if="confirm" class="pa-3">
           <v-btn block color="primary" @click="updateConfirmed(true)">
             {{ $t('prompts.quantity.confirm') }}
           </v-btn>
@@ -113,7 +108,6 @@ const emit = defineEmits(['update:modelValue', 'update:confirmed']);
 
 const { i18n: { t } } = useI18n();
 
-const fractions = [1 / 4, 1 / 3, 1 / 2, 2 / 3, 3 / 4];
 const currentValue = defineModel('modelValue', { type: Number, default: 1 });
 
 const wholeInputId = useId();
@@ -121,8 +115,41 @@ const wholeInputLabelId = `${wholeInputId}-label`;
 const fractionInputId = useId();
 const fractionInputLabelId = `${fractionInputId}-label`;
 
-const currentWhole = computed(() => Math.floor(currentValue.value));
-const currentFraction = computed(() => currentValue.value - currentWhole.value);
+const currentWhole = computed<number>({
+  get: () => Math.floor(currentValue.value),
+  set: (value) => {
+    currentValue.value = value + currentFraction.value;
+  },
+});
+
+const currentFraction = computed<number>({
+  get: () => normalizeFraction(currentValue.value - Math.floor(currentValue.value)),
+  set: (value) => {
+    currentValue.value = currentWhole.value + value;
+  },
+});
+
+const fractionLabel = computed(() => {
+  if (!currentFraction.value)
+    return currentFraction.value;
+
+  const fraction = currentFraction.value.toFixed(2);
+
+  switch (fraction) {
+    case '0.25':
+      return '¼';
+    case '0.33':
+      return '⅓';
+    case '0.50':
+      return '½';
+    case '0.67':
+      return '⅔';
+    case '0.75':
+      return '¾';
+    default:
+      return fraction.toString();
+  }
+});
 
 const foodText = computed(() => props.foodLabel.trim() || t('prompts.quantity.accessible2.food'));
 
@@ -130,72 +157,35 @@ const minWhole = computed(() => Math.floor(props.min));
 const maxWhole = computed(() => Math.floor(props.max));
 
 const fractionOptions = computed(() => [
-  { title: t('prompts.quantity.accessible2.none'), value: 0 },
-  { title: '¼', value: 1 / 4 },
-  { title: '⅓', value: 1 / 3 },
-  { title: '½', value: 1 / 2 },
-  { title: '⅔', value: 2 / 3 },
-  { title: '¾', value: 3 / 4 },
-] as const);
+  { title: '0', value: 0 },
+  { title: '¼', value: 0.25 },
+  { title: '⅓', value: 0.33 },
+  { title: '½', value: 0.5 },
+  { title: '⅔', value: 0.67 },
+  { title: '¾', value: 0.75 },
+]);
 
-const fractionLabels = {
-  0.25: '¼',
-  0.33: '⅓',
-  '0.50': '½',
-  0.67: '⅔',
-  0.75: '¾',
-} as const;
-
-const fractionInput = computed(() => normalizeFraction(currentFraction.value));
 const quantitySummary = computed(() => {
   const wholeValue = currentWhole.value;
-  const fractionValue = fractionInput.value;
+  const fractionValue = currentFraction.value;
 
   if (!fractionValue)
     return wholeValue.toString();
 
-  const fractionLabel = fractionToLabel(fractionValue);
-
   if (!wholeValue)
-    return fractionLabel;
+    return fractionLabel.value;
 
-  return `${wholeValue} ${t('prompts.quantity.and')} ${fractionLabel}`;
+  return `${wholeValue} ${t('prompts.quantity.and')} ${fractionLabel.value}`;
 });
 
-function fractionToLabel(value: number) {
-  return fractionLabels[value.toFixed(2) as keyof typeof fractionLabels] ?? value.toFixed(2);
-}
-
-function normalizeFraction(value: number) {
-  const normalized = value.toFixed(2);
-  return fractions.find(fraction => fraction.toFixed(2) === normalized) ?? 0;
-}
-
 function setAll() {
-  update(props.max);
+  currentValue.value = props.max;
   updateConfirmed(true);
 };
 
-function clamp(value: number) {
-  return Math.min(props.max, Math.max(props.min, value));
-};
-
-function update(value: number) {
-  currentValue.value = clamp(currentValue.value + value);
-};
-
-function updateWhole(value: string | number | null) {
-  const sanitized = `${value ?? ''}`.replaceAll(/\D/g, '');
-  const parsedWhole = sanitized ? Number.parseInt(sanitized, 10) : 0;
-
-  currentValue.value = clamp(parsedWhole + fractionInput.value);
-}
-
-function updateFraction(value: number | string | null) {
-  const parsed = Number(value ?? 0);
-  const selectedFraction = normalizeFraction(Number.isNaN(parsed) ? 0 : parsed);
-
-  currentValue.value = clamp(currentWhole.value + selectedFraction);
+function normalizeFraction(value: number) {
+  const normalized = Number(value.toFixed(2));
+  return normalized;
 }
 
 function updateConfirmed(value: boolean) {
@@ -208,4 +198,16 @@ watch(currentValue, () => {
 });
 </script>
 
-<style scoped></style>
+<style>
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+</style>
