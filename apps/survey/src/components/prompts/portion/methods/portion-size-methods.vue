@@ -5,7 +5,7 @@
     :mandatory="selected !== null"
   >
     <v-container>
-      <v-row>
+      <v-row role="list">
         <v-col
           v-for="(availableMethod) in portionSizeMethods"
           :key="availableMethod.index"
