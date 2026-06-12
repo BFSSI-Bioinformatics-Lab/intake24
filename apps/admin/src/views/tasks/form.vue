@@ -55,7 +55,7 @@
             </v-col>
             <v-col v-if="data.active" cols="12" md="6">
               <div class="d-flex align-center" style="height: 100%">
-                <span v-if="entry.bullJob?.next" class="text-subtitle-1">
+                <span v-if="entry.bullJob?.next" class="text-body-large">
                   {{ $t('tasks.run.next') }}: {{ formatDateTime(new Date(entry.bullJob.next)) }}
                 </span>
               </div>
@@ -80,15 +80,18 @@
                 variant="outlined"
               />
             </v-col>
+            <v-col cols="12">
+              <component
+                :is="data.job"
+                v-if="Object.keys(data.params).length"
+                v-model="data.params"
+                :errors="errors"
+                name="params"
+                @update:model-value="errors.clear(paramErrors)"
+              />
+            </v-col>
           </v-row>
-          <component
-            :is="data.job"
-            v-if="Object.keys(data.params).length"
-            v-model="data.params"
-            :errors="errors"
-            name="params"
-            @update:model-value="errors.clear(paramErrors)"
-          />
+
           <submit-footer :disabled="errors.any.value" />
         </v-card-text>
       </v-form>

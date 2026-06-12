@@ -1,5 +1,5 @@
 <template>
-  <v-row class="ml-2" dense>
+  <v-row class="ml-2" density="compact">
     <v-col cols="12" md="6">
       <v-switch
         hide-details="auto"
@@ -26,10 +26,9 @@ import type { Condition } from '@intake24/common/prompts';
 
 import { useVModel } from '@vueuse/core';
 
+import { ConditionItem } from '@intake24/admin/components/conditions';
 import { getConditionDefaults, getDefaultConditionProperty } from '@intake24/common/prompts';
 import { copy } from '@intake24/common/util';
-
-import ConditionItem from './condition-item.vue';
 
 const props = defineProps({
   modelValue: {

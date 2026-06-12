@@ -7,6 +7,8 @@
   "edit": "Edit user access",
   "search": "Search for user",
   "create": "Create new user",
+  "securableType": "Resource type",
+  "securableId": "Resource ID",
 
   "owner": {
     "_": "Owner",
@@ -36,7 +38,7 @@
     "food-list:edit": "Edit food list",
     "food-ranking": "Food ranking",
     "split-lists": "Split lists",
-    "recipe-foods": "Recipe foods",
+    "food-builders": "Food builders",
     "split-words": "Split words",
     "synonym-sets": "Synonym sets",
     "tasks": "Tasks",

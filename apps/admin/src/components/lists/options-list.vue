@@ -1,7 +1,7 @@
 <template>
   <v-toolbar flat tile>
     <v-toolbar-title class="font-weight-medium">
-      <div class="text-h5">
+      <div class="text-headline-small">
         {{ $t('common.options._') }}
       </div>
     </v-toolbar-title>
@@ -39,22 +39,16 @@
             :label="$t('common.options.shortLabel')"
             variant="outlined"
           />
-          <v-text-field
-            v-model="option.value"
-            density="compact"
-            hide-details="auto"
-            :label="$t('common.options.value')"
-            :rules="optionValueRules"
-            variant="outlined"
-          />
-          <v-text-field
-            v-if="props.updateFood"
-            v-model="option.updateFoodValue"
-            density="compact"
-            hide-details="auto"
-            :label="$t('common.options.updateFood')"
-            variant="outlined"
-          />
+          <slot :name="`value.${idx}`">
+            <v-text-field
+              v-model="option.value"
+              density="compact"
+              hide-details="auto"
+              :label="$t('common.options.value')"
+              :rules="optionValueRules"
+              variant="outlined"
+            />
+          </slot>
           <div class="d-flex flex-column flex-sm-row gc-6 px-2">
             <v-switch
               v-model="option.selected"
@@ -83,7 +77,7 @@
 
 <script lang="ts" setup>
 import type { PropType } from 'vue';
-import type { ZodNumber, ZodString } from 'zod';
+import type { ZodType } from 'zod';
 
 import type { RuleCallback } from '@intake24/admin/types';
 import type { ListOption } from '@intake24/common/types';
@@ -92,23 +86,22 @@ import { deepEqual } from 'fast-equals';
 import { computed, ref, watch } from 'vue';
 import { VueDraggable } from 'vue-draggable-plus';
 
-import { addMissingIds } from '@intake24/admin/util';
+import { toIndexedList } from '@intake24/admin/util';
 
 defineOptions({ name: 'OptionsList' });
 
 const props = defineProps({
+  default: {
+    type: [String, Number, Array] as PropType<string | number | unknown[]>,
+  },
   exclusive: {
     type: Boolean,
-  },
-  updateFood: {
-    type: Boolean,
-    default: false,
   },
   numeric: {
     type: Boolean,
   },
   options: {
-    type: Array as PropType<ListOption<ZodString | ZodNumber>[]>,
+    type: Array as PropType<ListOption<ZodType>[]>,
     required: true,
   },
   readonly: {
@@ -123,7 +116,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:options']);
 
-const currentOptions = ref(addMissingIds(props.options));
+const currentOptions = ref(toIndexedList(props.options));
 
 const defaultValueRules = [
   (value: string | null): boolean | string => {
@@ -132,11 +125,12 @@ const defaultValueRules = [
   },
 ];
 
+const outputOptions = computed<ListOption<ZodAny>[]>(() => currentOptions.value.map(({ id, ...rest }) => (rest)));
 const optionValueRules = computed<RuleCallback[]>(() => [...defaultValueRules, ...props.rules]);
 
 function add() {
-  const newId = currentOptions.value.reduce((acc, cur) => Math.max(acc, cur.id), 0) + 1;
-  currentOptions.value.push({ id: newId, label: `label-${newId}`, shortLabel: `shortLabel-${newId}`, value: props.numeric ? newId : `value-${newId}`, updateFoodValue: 'NO_UPDATE' });
+  const size = currentOptions.value.length + 1;
+  currentOptions.value.push({ id: size, label: `label-${size}`, shortLabel: `shortLabel-${size}`, value: props.default ?? (props.numeric ? size : `value-${size}`) });
 };
 
 function remove(index: number) {
@@ -144,17 +138,17 @@ function remove(index: number) {
 };
 
 function update() {
-  emit('update:options', currentOptions.value);
+  emit('update:options', outputOptions.value);
 };
 
 watch(() => props.options, (val) => {
-  if (deepEqual(val, currentOptions.value))
+  if (deepEqual(val, outputOptions.value))
     return;
 
-  currentOptions.value = addMissingIds(val);
+  currentOptions.value = toIndexedList(val);
 });
 
-watch(currentOptions, () => {
+watch(outputOptions, () => {
   update();
 }, { deep: true });
 </script>

@@ -6,6 +6,8 @@
   "edit": "Modifier l'accès utilisateur",
   "search": "Chercher un utilisateur",
   "create": "Créer un nouvel utilisateur",
+  "securableType": "Type de ressource",
+  "securableId": "ID de ressource",
   "owner": {
     "_": "Propriétaire",
     "title": "Propriété"
@@ -30,7 +32,7 @@
     "food-list:edit": "Liste d'aliments - modifier",
     "food-ranking": "Classement d'aliments",
     "split-lists": "Séparer les listes",
-    "recipe-foods": "Aliments pour les recettes",
+    "food-builders": "Aliments pour les recettes",
     "split-words": "Séparer les mots",
     "synonym-sets": "Séries de synonymes",
     "tasks": "Tâches",

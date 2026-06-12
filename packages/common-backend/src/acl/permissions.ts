@@ -83,7 +83,7 @@ export const permissions = [
   { name: 'locales:food-list:edit', displayName: 'Locale - edit food list' },
   { name: 'locales:securables', displayName: 'Locales security' },
   { name: 'locales:split-lists', displayName: 'Locale split lists' },
-  { name: 'locales:recipe-foods', displayName: 'Locale recipe foods' },
+  { name: 'locales:food-builders', displayName: 'Locale food builders' },
   { name: 'locales:split-words', displayName: 'Locale split words' },
   { name: 'locales:synonym-sets', displayName: 'Locale synonym sets' },
   { name: 'locales:tasks', displayName: 'Locale tasks' },
@@ -191,6 +191,7 @@ export const permissions = [
   { name: 'users:delete', displayName: 'Delete users' },
   { name: 'users:permissions', displayName: 'User permissions' },
   { name: 'users:roles', displayName: 'User roles' },
+  { name: 'users:securables', displayName: 'User securables' },
 ] as const;
 
 export type PermissionName = (typeof permissions)[number]['name'];

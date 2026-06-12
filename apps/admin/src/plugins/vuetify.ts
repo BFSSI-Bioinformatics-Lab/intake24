@@ -1,18 +1,17 @@
+/* eslint-disable perfectionist/sort-imports */
 import type { IconAliases } from 'vuetify';
 
 import { createVuetify } from 'vuetify';
+// Vuetify styles must be imported before any components that use it to make the css layers work correctly
+import 'vuetify/styles';
+
 import { VAvatar } from 'vuetify/components';
 import * as directives from 'vuetify/directives';
 import { aliases, fa } from 'vuetify/iconsets/fa';
-import { VDateInput } from 'vuetify/labs/VDateInput';
-import { VStepperVertical, VStepperVerticalItem } from 'vuetify/labs/VStepperVertical';
 
 import { colors } from '@intake24/common/theme';
 
 import resources from '../router/resources';
-
-// @ts-expect-error - will be fixed in next release
-import 'vuetify/styles';
 
 const resourceIcons = resources.reduce<Partial<IconAliases>>((acc, resource) => {
   acc[resource.name] = resource.icon;
@@ -20,11 +19,6 @@ const resourceIcons = resources.reduce<Partial<IconAliases>>((acc, resource) => 
 }, {});
 
 export default createVuetify({
-  components: {
-    VDateInput,
-    VStepperVertical,
-    VStepperVerticalItem,
-  },
   directives,
   aliases: {
     VDragAndDropHandle: VAvatar,
@@ -34,6 +28,7 @@ export default createVuetify({
       variant: 'tonal',
     },
     VBtn: {
+      class: 'text-uppercase',
       variant: 'flat',
     },
     VCardActions: {
@@ -158,6 +153,7 @@ export default createVuetify({
     },
   },
   theme: {
+    defaultTheme: 'light',
     themes: {
       light: {
         colors,

@@ -4,7 +4,7 @@ import { endOfDay, startOfDay } from 'date-fns';
 import { pick } from 'lodash-es';
 import { z } from 'zod';
 
-import { searchSortingAlgorithms } from '../surveys';
+import { searchSortingAlgorithms } from '../surveys/search-settings';
 import { bigIntString } from './common';
 import { packageExportOptions, packageFileTypes } from './http/admin/io';
 
@@ -43,12 +43,14 @@ export const LocaleIndexBuild = z.object({
   force: z.boolean().optional(),
 });
 
-export const localeCopyFoodsSubTasks = ['categories', 'foods', 'associatedFoods', 'attributes', 'brands', 'recipeFoods', 'splitLists', 'splitWords', 'synonymSets'] as const;
+export const localeCopyFoodsSubTasks = ['categories', 'foods', 'associatedFoods', 'attributes', 'brands', 'foodBuilders', 'splitLists', 'splitWords', 'synonymSets'] as const;
 export type LocaleCopyFoodsSubTasks = (typeof localeCopyFoodsSubTasks)[number];
 export const localeCopySystemSubTasks = ['searchPopularity', 'searchFixedRanking'] as const;
 export type LocaleCopySystemSubTasks = (typeof localeCopySystemSubTasks)[number];
 export const localeCopySubTasks = [...localeCopyFoodsSubTasks, ...localeCopySystemSubTasks] as const;
 export type LocaleCopySubTasks = (typeof localeCopySubTasks)[number];
+export const localesSyncSubTasks = ['foodBuilders'] as const;
+export type LocaleSyncSubTasks = (typeof localesSyncSubTasks)[number];
 
 export const LocaleCopy = z.object({
   localeId: bigIntString,
@@ -61,6 +63,11 @@ export const LocaleCategories = z.object({
 export const LocaleFoods = z.object({
   localeId: bigIntString,
 });
+export const LocaleDeduplicateFoods = z.object({
+  localeId: bigIntString,
+  primaryCodes: z.array(z.string().nonempty()),
+  dryRun: z.boolean().or(z.stringbool()).default(false),
+});
 export const LocaleFoodNutrientMapping = z.object({
   localeId: bigIntString,
 });
@@ -68,6 +75,9 @@ export const LocaleFoodRankingUpload = z.object({
   localeId: bigIntString,
   file: z.string().nonempty(),
   targetAlgorithm: z.enum(searchSortingAlgorithms),
+});
+export const LocalesSync = z.object({
+  subTasks: z.enum(localesSyncSubTasks).array(),
 });
 export const NutrientTableDataImport = z.object({
   nutrientTableId: z.string().nonempty(),
@@ -220,8 +230,10 @@ export const jobParams = z.object({
   LocaleCopy,
   LocaleCategories,
   LocaleFoods,
+  LocaleDeduplicateFoods,
   LocaleFoodNutrientMapping,
   LocaleFoodRankingUpload,
+  LocalesSync,
   NutrientTableDataImport,
   NutrientTableMappingImport,
   PopularitySearchUpdateCounters,
@@ -256,8 +268,10 @@ export const jobTypeParams = z.union([
   LocaleCopy,
   LocaleCategories,
   LocaleFoods,
+  LocaleDeduplicateFoods,
   LocaleFoodNutrientMapping,
   LocaleFoodRankingUpload,
+  LocalesSync,
   NutrientTableDataImport,
   NutrientTableMappingImport,
   PopularitySearchUpdateCounters,
@@ -296,6 +310,10 @@ export const localeTasks = z.discriminatedUnion('type', [
     params: LocaleFoods,
   }),
   z.object({
+    type: z.literal('LocaleDeduplicateFoods'),
+    params: LocaleDeduplicateFoods,
+  }),
+  z.object({
     type: z.literal('LocaleFoodNutrientMapping'),
     params: LocaleFoodNutrientMapping,
   }),
@@ -310,6 +328,7 @@ export const localeJobs = [
   'LocaleCategories',
   'LocaleCopy',
   'LocaleFoods',
+  'LocaleDeduplicateFoods',
   'LocaleFoodNutrientMapping',
   'LocaleFoodRankingUpload',
 ] as const;
@@ -408,6 +427,7 @@ export const jobTypes = [
   'FeedbackSchemesSync',
   'LanguageTranslationsSync',
   'LocaleIndexBuild',
+  'LocalesSync',
   'PopularitySearchUpdateCounters',
   'PurgeExpiredTokens',
   'ResourceExport',
@@ -454,6 +474,11 @@ export const defaultJobsParams: JobParams = {
   LocaleFoods: {
     localeId: '',
   },
+  LocaleDeduplicateFoods: {
+    localeId: '',
+    primaryCodes: [],
+    dryRun: false,
+  },
   LocaleFoodNutrientMapping: {
     localeId: '',
   },
@@ -461,6 +486,9 @@ export const defaultJobsParams: JobParams = {
     localeId: '',
     file: '',
     targetAlgorithm: 'fixed',
+  },
+  LocalesSync: {
+    subTasks: [...localesSyncSubTasks],
   },
   NutrientTableDataImport: {
     nutrientTableId: '',

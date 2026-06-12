@@ -1,6 +1,6 @@
 <template>
   <v-container :class="{ 'pa-0': $vuetify.display.mobile }">
-    <v-row justify="center" :no-gutters="$vuetify.display.mobile">
+    <v-row class="justify-center" :no-gutters="$vuetify.display.mobile">
       <v-col cols="12" md="8" sm="9">
         <v-card v-if="profile" :tile="$vuetify.display.mobile">
           <v-card-title class="text-h5 font-weight-medium mb-2 pt-4" tag="h1">
@@ -64,15 +64,15 @@
                 @update:model-value="updateLanguage"
               >
                 <template #item="{ props, item }">
-                  <v-list-item v-bind="props" :title="item.raw.englishName">
+                  <v-list-item v-bind="props" :title="item.englishName">
                     <template #prepend>
-                      <span :class="`fi fi-${item.raw.countryFlagCode} me-3`" />
+                      <span :class="`fi fi-${item.countryFlagCode} me-3`" />
                     </template>
                   </v-list-item>
                 </template>
                 <template #selection="{ item }">
-                  <span :class="`fi fi-${item.raw.countryFlagCode} me-3`" />
-                  {{ item.raw.englishName }}
+                  <span :class="`fi fi-${item.countryFlagCode} me-3`" />
+                  {{ item.englishName }}
                 </template>
               </v-select>
             </div>

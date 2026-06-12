@@ -15,11 +15,10 @@
     <v-dialog
       max-width="450"
       :model-value="!!hint && props.mode === 'dialog'"
-      @keydown.enter="confirm"
-      @keydown.esc="tryAgain"
+      @keydown.enter.esc="keydown"
     >
       <v-card>
-        <v-card-title class="font-weight-medium text-h4 text-uppercase text-center">
+        <v-card-title class="font-weight-medium text-headline-large text-uppercase text-center">
           {{ promptI18n['hints.label'] }}
         </v-card-title>
         <v-card-text class="d-flex flex-column gr-4">
@@ -70,7 +69,7 @@
 <script lang="ts" setup>
 import type { PropType } from 'vue';
 
-import type { Prompts } from '@intake24/common/prompts';
+import type { FoodSearchHint, Prompt } from '@intake24/common/prompts';
 
 import { watchDebounced } from '@vueuse/core';
 import { computed, ref } from 'vue';
@@ -92,9 +91,7 @@ const props = defineProps({
     default: '',
   },
   prompt: {
-    type: Object as PropType<
-      Prompts['associated-foods-prompt' | 'edit-meal-prompt' | 'general-associated-foods-prompt' | 'food-search-prompt' | 'recipe-builder-prompt']
-    >,
+    type: Object as PropType<Prompt & { hints: FoodSearchHint[] }>,
     required: true,
   },
 });
@@ -152,6 +149,13 @@ function confirm() {
 function tryAgain() {
   hint.value = null;
   emit('tryAgain');
+}
+
+function keydown(event: KeyboardEvent) {
+  if (event.key === 'Enter')
+    confirm();
+  else if (event.key === 'Escape')
+    tryAgain();
 }
 
 if (props.activator === 'watch') {

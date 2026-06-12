@@ -1,15 +1,16 @@
 <template>
   <addon-foods-prompt
-    v-model="state"
     v-bind="{
       food,
       meal,
       meals,
       localeId,
+      modelValue: state,
       prompt,
       section,
     }"
     @action="action"
+    @update:model-value="update"
   />
 </template>
 
@@ -17,14 +18,16 @@
 import type { PromptStates } from '@intake24/common/prompts';
 import type { FoodState, PortionSizeParameters } from '@intake24/common/surveys';
 
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
+import { addonFoodsPromptState } from '@intake24/common/prompts';
 import { AddonFoodsPrompt } from '@intake24/survey/components/prompts/standard';
 import { filterForAddonFoods } from '@intake24/survey/dynamic-recall/prompt-filters';
-import { useSurvey } from '@intake24/survey/stores';
+import { getOrCreatePromptStateStore, useSurvey } from '@intake24/survey/stores';
+import { pushFullHistoryEntry } from '@intake24/survey/stores/recall-history';
 import { flattenFoods, getEntityId } from '@intake24/survey/util';
 
-import { createHandlerProps, useFoodPromptUtils, useMealPromptUtils, usePromptHandlerNoStore } from '../composables';
+import { createHandlerProps, useFoodPromptUtils, useMealPromptUtils } from '../composables';
 
 const props = defineProps(createHandlerProps<'addon-foods-prompt'>());
 
@@ -35,6 +38,7 @@ const { mealOptional: meal } = useMealPromptUtils();
 const survey = useSurvey();
 
 const addons = computed(() => filterForAddonFoods(survey, props.prompt, meal.value));
+const promptStore = getOrCreatePromptStateStore<PromptStates['addon-foods-prompt']>(props.prompt.component)();
 
 const meals = computed(() => {
   const mealEntry = meal.value;
@@ -64,6 +68,7 @@ const meals = computed(() => {
 });
 
 const getInitialState = computed(() => ({
+  opened: meals.value.map(meal => meal.id),
   foods: meals.value.reduce<PromptStates['addon-foods-prompt']['foods']>((acc, meal) => {
     meal.foods.forEach((food) => {
       acc[food.id] = addons.value[meal.id][food.id].map(addon => ({
@@ -85,6 +90,52 @@ const getInitialState = computed(() => ({
   }, {}),
 }));
 
+const entityId = computed(() => {
+  if (survey.selection.element?.type === 'food')
+    return food.value?.id ?? '$survey';
+
+  if (survey.selection.element?.type === 'meal')
+    return meal.value?.id ?? '$survey';
+
+  return '$survey';
+});
+
+function getRestoredState() {
+  const initialState = getInitialState.value;
+  const storedState = promptStore.prompts[entityId.value]?.[props.prompt.id];
+  if (storedState === undefined)
+    return initialState;
+
+  const result = addonFoodsPromptState.safeParse(storedState);
+  if (result.success) {
+    // Stored foods need to be applied on top of the initial state to ensure
+    // that the stored and evaluated addon-compatible food lists are consistent.
+    // This should not happen in normal survey flow, but happens sometimes in development.
+    //
+    // - If the food is in the evaluated list but not in the stored state, assign initial state.
+    // - If the food is in the stored state, but not in the evaluated list, drop it.
+    const foods = Object.entries(initialState.foods).reduce<PromptStates['addon-foods-prompt']['foods']>((acc, [foodId, addons]) => {
+      acc[foodId] = result.data.foods[foodId] ?? addons;
+      return acc;
+    }, {});
+
+    return {
+      ...initialState,
+      foods,
+    };
+  }
+
+  promptStore.clearState(entityId.value, props.prompt.id);
+  return initialState;
+}
+
+const state = ref<PromptStates['addon-foods-prompt']>(getRestoredState());
+
+function update(value: PromptStates['addon-foods-prompt']) {
+  state.value = value;
+  promptStore.updateState(entityId.value, props.prompt.id, value);
+}
+
 function commitAnswer() {
   for (const [foodId, addons] of Object.entries(state.value.foods)) {
     const linkedFoods = addons.reduce<FoodState[]>((acc, addonFood) => {
@@ -94,12 +145,20 @@ function commitAnswer() {
         return acc;
       }
 
-      if (confirmed === false || !data)
+      if (confirmed === false || !data || !portionSize.unit)
         return acc;
 
-      const portionSizeMethodIndex = data.portionSizeMethods.findIndex(psm =>
-        psm.method === portionSize.method && psm.pathways.includes('addon')
-        && (psm.parameters as PortionSizeParameters['standard-portion']).units.find(unit => unit.name === portionSize.unit?.name));
+      const unitName = portionSize.unit.name;
+      const portionSizeMethodIndex = data.portionSizeMethods.findIndex((psm) => {
+        if (psm.method !== portionSize.method || !psm.pathways.includes('addon'))
+          return false;
+
+        const units = (psm.parameters as Partial<PortionSizeParameters['standard-portion']>).units;
+        return Array.isArray(units) && units.some(unit => unit.name === unitName);
+      });
+
+      if (portionSizeMethodIndex === -1)
+        return acc;
 
       acc.push(
         {
@@ -120,7 +179,18 @@ function commitAnswer() {
     survey.addLinkedFoods(foodId, linkedFoods);
     survey.addFoodFlag(foodId, `${props.prompt.id}-complete`);
   }
+
+  promptStore.clearState(entityId.value, props.prompt.id);
 }
 
-const { state, action } = usePromptHandlerNoStore({ emit }, getInitialState, commitAnswer);
+// This is the same as the standard prompt-handler action flow, but addon foods needs
+// custom prompt-store keys for food, meal, and survey-level scopes.
+function action(type: string, ...args: [id?: string, params?: object]) {
+  if (type === 'next') {
+    pushFullHistoryEntry(props.prompt.component);
+    commitAnswer();
+  }
+
+  emit('action', type, ...args);
+}
 </script>

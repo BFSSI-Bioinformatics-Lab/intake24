@@ -157,26 +157,24 @@
     <template #nav-actions>
       <template v-if="!showSABcard">
         <v-btn color="primary" :title="promptI18n.notSame" @click.stop="action('notSame')">
-          <span class="text-overline font-weight-medium">
+          <span class="text-label-medium font-weight-medium">
             {{ promptI18n.notSame }}</span>
           <v-icon class="pb-1" icon="$no" />
         </v-btn>
-        <v-divider vertical />
         <v-btn color="primary" :title="promptI18n.same" @click.stop="onSame">
-          <span class="text-overline font-weight-medium">
+          <span class="text-label-medium font-weight-medium">
             {{ promptI18n.same }}</span>
           <v-icon class="pb-1" icon="$yes" />
         </v-btn>
-        <v-divider vertical />
         <v-btn color="primary" :title="promptI18n.details" @click.stop="showSABcard = !showSABcard">
-          <span class="text-overline font-weight-medium">
+          <span class="text-label-medium font-weight-medium">
             {{ promptI18n.details }}</span>
           <v-icon class="pb-1" icon="$info" />
         </v-btn>
       </template>
       <template v-else>
         <v-btn block color="primary" title="$t('common.action.continue')" variant="flat" @click.stop="onSame">
-          <span class="text-overline font-weight-medium">
+          <span class="text-label-medium font-weight-medium">
             {{ $t('common.action.continue') }}
           </span>
           <v-icon class="pb-1" icon="$next" />
@@ -285,6 +283,8 @@ const linkedFoods = computed(() =>
       return { id, text: food.description };
     if (food.type === 'missing-food')
       return { id, text: food.info?.name ?? food.searchTerm };
+    if (food.type === 'generic-builder')
+      return { id, text: food.searchTerm ?? food.description };
     if (food.type === 'recipe-builder')
       return { id, text: food.template.name ?? food.searchTerm };
 

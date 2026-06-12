@@ -9,9 +9,9 @@
       link
       @click="updateContextId(food.id)"
     >
-      <v-list-item-title class="text-body-2 text-wrap d-flex flex-column">
+      <v-list-item-title class="text-body-medium text-wrap d-flex flex-column">
         <span class="food-name">{{ foodName }}</span>
-        <span v-if="customPromptAnswerLabels" class="text-caption text-grey">
+        <span v-if="customPromptAnswerLabels" class="text-body-small text-grey">
           {{ customPromptAnswerLabels }}
         </span>
       </v-list-item-title>
@@ -97,13 +97,13 @@ export default defineComponent({
     },
   },
 
-  emits: ['action', 'update:context-id'],
+  emits: ['action', 'update:contextId'],
 
   setup(props, ctx) {
     const { action, foodName, isPortionSizeComplete, isCustomPromptComplete, menu, customPromptAnswerLabels } = useFoodItem(props, ctx);
 
     const updateContextId = (id: string) => {
-      ctx.emit('update:context-id', id);
+      ctx.emit('update:contextId', id);
     };
 
     return {

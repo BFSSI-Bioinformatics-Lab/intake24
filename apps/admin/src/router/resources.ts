@@ -78,7 +78,7 @@ export const resources: Resource[] = [
       'split-lists',
       'split-words',
       'synonym-sets',
-      'recipe-foods',
+      'food-builders',
       'tasks',
       'securables',
     ],
@@ -230,7 +230,7 @@ export const resources: Resource[] = [
     icon: 'fas fa-fw fa-users',
     api: 'admin/users',
     generateRoutes: true,
-    routes: [...routes, 'permissions', 'roles'],
+    routes: [...routes, 'permissions', 'roles', 'securables'],
     refs: true,
   },
   {

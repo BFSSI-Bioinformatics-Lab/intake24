@@ -1,15 +1,23 @@
 import type {
-  FoodState,
-  MissingFood,
   PortionSizeStates,
+  StandardUnit,
 } from '../surveys';
 import type {
-  RecipeFood,
-  RequiredLocaleTranslation,
-} from '../types';
+  FoodState,
+  MissingFood,
+} from '../surveys/recall';
 import type { FoodHeader, UserFoodData } from '../types/http';
+import type { FoodBuilderStepType } from '../types/http/admin';
 import type { Time } from '../util';
+import type { Condition } from './conditions';
 import type { AddonFood } from './prompts';
+
+import { z } from 'zod';
+
+import { portionSizeStates } from '../surveys/portion-size';
+import { localeTranslation } from '../types/common';
+import { userFoodData } from '../types/http/foods/user-food-data';
+import { condition } from './conditions';
 
 export type AssociatedFoodPromptItem = {
   confirmed?: 'yes' | 'no';
@@ -27,34 +35,64 @@ export type AssociatedFoodPrompt = {
 
 export type MissingFoodRecipeBuilderItemState = {
   type: 'missing';
-  id: string;
-  idx: number;
   name: string;
   searchTerm?: string | null;
 };
 
 export type SelectedFoodRecipeBuilderItemState = FoodHeader & {
   type: 'selected';
-  id: string;
-  idx: number;
   ingredient: UserFoodData;
 };
+export type FoodRecipeBuilderItemState = MissingFoodRecipeBuilderItemState | SelectedFoodRecipeBuilderItemState;
 
-export type FoodRecipeBuilderItemState
-  = | MissingFoodRecipeBuilderItemState
-    | SelectedFoodRecipeBuilderItemState;
+export type FoodBuilderCoefficientStepState = {
+  type: 'coefficient';
+  option: number | null;
+};
 
-export type RecipeBuilderStepState = {
-  confirmed?: 'yes' | 'no';
+export type FoodBuilderConditionStepState = {
+  type: 'condition';
+  option: Condition[] | null;
+};
+
+export type FoodBuilderIngredientStepState = {
+  type: 'ingredient';
+  confirmed?: boolean;
   anotherFoodConfirmed?: boolean;
   foods: FoodRecipeBuilderItemState[];
-  order: number;
-  description: RequiredLocaleTranslation;
-  name: RequiredLocaleTranslation;
-  categoryCode: string;
-  repeat: boolean;
-  required: boolean;
 };
+
+export type FoodBuilderLookupEntityStepState = {
+  type: 'lookup-entity';
+  option: string | null;
+};
+
+export type FoodBuilderLookupUnitStepState = {
+  type: 'lookup-unit';
+  option: StandardUnit | null;
+};
+
+export type FoodBuilderQuantityStepState = {
+  type: 'quantity';
+  quantity: number;
+  confirmed: boolean;
+};
+
+export type FoodBuilderSelectEntityStepState = {
+  type: 'select-entity';
+  option: string | null;
+};
+
+export type FoodBuilderStepState
+  = | FoodBuilderCoefficientStepState
+    | FoodBuilderConditionStepState
+    | FoodBuilderIngredientStepState
+    | FoodBuilderLookupEntityStepState
+    | FoodBuilderLookupUnitStepState
+    | FoodBuilderQuantityStepState
+    | FoodBuilderSelectEntityStepState;
+
+export type GetFoodBuilderStateStep<U extends FoodBuilderStepType> = Extract<FoodBuilderStepState, { type: U }>;
 
 export type PromptStates = {
   'as-served-prompt': {
@@ -86,6 +124,12 @@ export type PromptStates = {
     leftoversConfirmed: boolean;
     leftoversPrompt?: boolean;
     quantityConfirmed: boolean;
+  };
+  'generic-builder-prompt': {
+    food: UserFoodData | null;
+    portionSize: PortionSizeStates['standard-portion'];
+    steps: FoodBuilderStepState[];
+    activeStep?: number;
   };
   'guide-image-prompt': {
     portionSize: PortionSizeStates['guide-image'];
@@ -137,9 +181,8 @@ export type PromptStates = {
     option: number | null;
   };
   'recipe-builder-prompt': {
-    recipe: RecipeFood;
-    activeStep: number;
-    recipeSteps: RecipeBuilderStepState[];
+    steps: FoodBuilderIngredientStepState[];
+    activeStep?: number;
   };
   'standard-portion-prompt': {
     portionSize: PortionSizeStates['standard-portion'];
@@ -153,6 +196,7 @@ export type PromptStates = {
   };
   // Standard prompts
   'addon-foods-prompt': {
+    opened: string[];
     foods: Record<string, {
       confirmed: boolean | null;
       data: UserFoodData | null;
@@ -191,3 +235,24 @@ export type PromptStates = {
 };
 
 export type PromptState = PromptStates[keyof PromptStates];
+
+const addonFoodState = z.object({
+  id: z.string().min(1),
+  name: localeTranslation,
+  entity: z.enum(['category', 'food']),
+  code: z.string(),
+  filter: condition.array(),
+});
+
+export const addonFoodsPromptState = z.object({
+  opened: z.string().array(),
+  foods: z.record(
+    z.string(),
+    z.object({
+      confirmed: z.boolean().nullable(),
+      data: userFoodData.nullable(),
+      portionSize: portionSizeStates.shape['standard-portion'],
+      addon: addonFoodState,
+    }).array(),
+  ),
+});
