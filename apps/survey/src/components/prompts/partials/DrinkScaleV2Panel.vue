@@ -1,5 +1,8 @@
 <template>
   <div ref="wrapper" class="drink-scale-wrapper__v2">
+    <div aria-atomic="true" aria-live="polite" class="sr-only">
+      {{ liveRegionLabel }}
+    </div>
     <div class="drink-scale-drawer" :class="{ selected: cursorInScale }">
       <v-img
         ref="imgDrink"
@@ -52,7 +55,7 @@
       </div>
       <div class="drink-scale-label">
         <v-chip
-          class="ma-1 ma-md-2 pa-3 pa-md-4 text-title-large font-weight-bold border-info-1"
+          class="ma-1 ma-md-2 pa-3 pa-md-4 text-h6 font-weight-bold border-info-1"
           color="info"
         >
           {{ label }}
@@ -107,7 +110,7 @@ import type { DrinkwareScaleV2Response } from '@intake24/common/types/http';
 
 import { useElementSize } from '@vueuse/core';
 import { chunk, maxBy } from 'lodash-es';
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
+import { computed, ref, useTemplateRef, watch } from 'vue';
 import { useGoTo } from 'vuetify';
 import { VImg } from 'vuetify/components';
 
@@ -231,10 +234,17 @@ function isInScale(x: number, y: number) {
 }
 
 const cursorInScale = ref(false);
+const liveRegionLabel = ref('');
 
 // Move the slider by delta % (can be negative). Used by the 'I had more'/'I had less' buttons.
 function moveSliderRelative(delta: number) {
   sliderValue.value = Math.min(1, Math.max(0, sliderValue.value + delta));
+
+  liveRegionLabel.value = getFillPercentageText();
+}
+
+function getFillPercentageText() {
+  return `${Math.round(fillLevel.value * 100)}%`;
 }
 
 // Move the slider to a specific position. Used by onClick/onMove events to allow moving the slider
@@ -296,7 +306,6 @@ const fillVolume = computed(() => {
 });
 
 const label = computed(() => `${Math.round(fillVolume.value ?? 0)} ml`);
-let sliderThumbObserver: MutationObserver | null = null;
 
 function syncSliderAriaValueText() {
   if (!wrapper.value)
@@ -307,19 +316,7 @@ function syncSliderAriaValueText() {
   if (!thumb)
     return;
 
-  thumb.setAttribute('aria-valuetext', label.value);
-}
-
-function observeSliderThumb() {
-  if (!wrapper.value)
-    return;
-
-  sliderThumbObserver?.disconnect();
-  sliderThumbObserver = new MutationObserver(() => {
-    syncSliderAriaValueText();
-  });
-  sliderThumbObserver.observe(wrapper.value, { childList: true, subtree: true });
-  syncSliderAriaValueText();
+  thumb.setAttribute('aria-valuetext', getFillPercentageText());
 }
 
 function confirm() {
@@ -334,31 +331,15 @@ watch(fillLevel, (val) => {
 });
 
 watch(label, async () => {
-  await nextTick();
   syncSliderAriaValueText();
 }, { immediate: true });
 
 watch(
   () => props.open,
-  async (isOpen) => {
+  () => {
     sliderValue.value = props.modelValue / props.maxFillLevel; // Slider values are always in the range [0, 1]
-
-    if (isOpen) {
-      await nextTick();
-      syncSliderAriaValueText();
-    }
   },
 );
-
-onMounted(async () => {
-  await nextTick();
-  observeSliderThumb();
-});
-
-onBeforeUnmount(() => {
-  sliderThumbObserver?.disconnect();
-  sliderThumbObserver = null;
-});
 
 function scrollTo() {
   setTimeout(async () => {
@@ -386,6 +367,18 @@ watch(
   flex-direction: column;
   align-items: center;
   gap: 16px;
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 
   .drink-scale-drawer {
     pointer-events: none;

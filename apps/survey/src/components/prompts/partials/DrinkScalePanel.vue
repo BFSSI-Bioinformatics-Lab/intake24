@@ -1,5 +1,8 @@
 <template>
   <div ref="wrapper" class="drink-scale-wrapper">
+    <div aria-atomic="true" aria-live="polite" class="sr-only">
+      {{ liveRegionLabel }}
+    </div>
     <div
       class="drink-scale-drawer"
       :class="{ selected: cursorInScale }"
@@ -30,7 +33,7 @@
       </div>
       <div class="drink-scale-label">
         <v-chip
-          class="ma-1 ma-md-2 pa-3 pa-md-4 text-title-large font-weight-bold border-info-1"
+          class="ma-1 ma-md-2 pa-3 pa-md-4 text-h6 font-weight-bold border-info-1"
           color="info"
         >
           {{ label }}
@@ -85,7 +88,7 @@ import type { DrinkwareScaleEntry } from '@intake24/common/types/http/admin';
 
 import { useElementSize } from '@vueuse/core';
 import { debounce } from 'lodash-es';
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
+import { computed, ref, useTemplateRef, watch } from 'vue';
 import { useGoTo } from 'vuetify';
 
 import { ImagePlaceholder } from '@intake24/survey/components/elements';
@@ -131,10 +134,11 @@ const { height } = useElementSize(imgDrink);
 const imgScale = computed(() => height.value / props.scale.height);
 
 const cursorInScale = ref(false);
+const liveRegionLabel = ref('');
 const sliderMax = ref(props.maxFillLevel * (props.scale.fullLevel - props.scale.emptyLevel));
 const sliderMin = ref(0);
-const sliderStep = ref(Math.round(sliderMax.value / 6));
-const sliderKeyboardStep = computed(() => Math.max(1, Math.round(sliderMax.value / 50)));
+const sliderStep = ref(Math.round(sliderMax.value / 10));
+const sliderKeyboardStep = computed(() => Math.round(sliderMax.value / 20));
 const sliderValue = ref(sliderMax.value * props.modelValue);
 const sliderBottom = computed(() => `${props.scale.emptyLevel * imgScale.value}px`);
 const sliderHeight = computed(() => sliderMax.value * imgScale.value);
@@ -150,6 +154,12 @@ function updateSlider(value: number) {
     sliderMax.value,
     Math.max(sliderMin.value, sliderValue.value + value),
   );
+
+  liveRegionLabel.value = getFillPercentageText();
+}
+
+function getFillPercentageText() {
+  return `${Math.round(fillLevel.value * 100)}%`;
 }
 
 function touchUpdateSlider(event: MouseEvent) {
@@ -179,7 +189,6 @@ const fillVolume = computed(() =>
 );
 
 const label = computed(() => `${fillVolume.value} ml`);
-let sliderThumbObserver: MutationObserver | null = null;
 
 function syncSliderAriaValueText() {
   if (!wrapper.value)
@@ -190,19 +199,8 @@ function syncSliderAriaValueText() {
   if (!thumb)
     return;
 
-  thumb.setAttribute('aria-valuetext', label.value);
-}
-
-function observeSliderThumb() {
-  if (!wrapper.value)
-    return;
-
-  sliderThumbObserver?.disconnect();
-  sliderThumbObserver = new MutationObserver(() => {
-    syncSliderAriaValueText();
-  });
-  sliderThumbObserver.observe(wrapper.value, { childList: true, subtree: true });
-  syncSliderAriaValueText();
+  const percentage = getFillPercentageText();
+  thumb.setAttribute('aria-valuetext', percentage);
 }
 
 const imgClip = computed(
@@ -230,32 +228,16 @@ watch(fillLevel, (val) => {
 });
 
 watch(label, async () => {
-  await nextTick();
   syncSliderAriaValueText();
 }, { immediate: true });
 
 watch(
   () => props.open,
-  async (isOpen) => {
+  () => {
     sliderMax.value = props.maxFillLevel * (props.scale.fullLevel - props.scale.emptyLevel);
     sliderValue.value = sliderMax.value * props.modelValue;
-
-    if (isOpen) {
-      await nextTick();
-      syncSliderAriaValueText();
-    }
   },
 );
-
-onMounted(async () => {
-  await nextTick();
-  observeSliderThumb();
-});
-
-onBeforeUnmount(() => {
-  sliderThumbObserver?.disconnect();
-  sliderThumbObserver = null;
-});
 
 function scrollTo() {
   setTimeout(async () => {
@@ -283,6 +265,18 @@ watch(
   flex-direction: column;
   align-items: center;
   gap: 16px;
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 
   .drink-scale-drawer {
     position: relative;
