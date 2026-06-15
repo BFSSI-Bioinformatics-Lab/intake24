@@ -88,7 +88,7 @@ import type { DrinkwareScaleEntry } from '@intake24/common/types/http/admin';
 
 import { useElementSize } from '@vueuse/core';
 import { debounce } from 'lodash-es';
-import { computed, ref, useTemplateRef, watch } from 'vue';
+import { computed, onMounted, ref, useTemplateRef, watch } from 'vue';
 import { useGoTo } from 'vuetify';
 
 import { ImagePlaceholder } from '@intake24/survey/components/elements';
@@ -219,6 +219,8 @@ const overlayVars = computed(() => ({
 function confirm() {
   emit('confirm');
 }
+
+onMounted(() => syncSliderAriaValueText());
 
 watch(fillLevel, (val) => {
   if (!props.open)

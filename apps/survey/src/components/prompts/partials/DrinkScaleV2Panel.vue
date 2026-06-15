@@ -110,7 +110,7 @@ import type { DrinkwareScaleV2Response } from '@intake24/common/types/http';
 
 import { useElementSize } from '@vueuse/core';
 import { chunk, maxBy } from 'lodash-es';
-import { computed, ref, useTemplateRef, watch } from 'vue';
+import { computed, onMounted, ref, useTemplateRef, watch } from 'vue';
 import { useGoTo } from 'vuetify';
 import { VImg } from 'vuetify/components';
 
@@ -322,6 +322,8 @@ function syncSliderAriaValueText() {
 function confirm() {
   emit('confirm');
 }
+
+onMounted(() => syncSliderAriaValueText());
 
 watch(fillLevel, (val) => {
   if (!props.open)
