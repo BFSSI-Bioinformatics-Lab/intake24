@@ -25,8 +25,7 @@
               role="button"
               tabindex="0"
               @click="toggle"
-              @keydown.enter.prevent="toggle"
-              @keydown.space.prevent="toggle"
+              @keydown="onKeydown($event, toggle)"
             >
               <component :is="`${availableMethod.method}-method`" :method="availableMethod" />
               <v-card-actions
@@ -96,6 +95,13 @@ defineProps({
 defineEmits(['action', 'update:modelValue']);
 
 const selected = defineModel('modelValue', { type: Number as PropType<number | null>, default: null });
+
+function onKeydown(e: KeyboardEvent, toggle?: () => void) {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    toggle?.();
+  }
+}
 </script>
 
 <style lang="scss" scoped></style>
