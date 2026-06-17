@@ -90,7 +90,6 @@ const parentQuantity = computed(() => props.linkedParent.quantity ?? 1);
 const quantityCardComponent = computed(() => {
   if (
     props.prompt.component !== 'guide-image-prompt'
-    && props.prompt.component !== 'as-served-prompt'
     && props.prompt.component !== 'standard-portion-prompt'
   ) {
     return QuantityCard;
@@ -106,7 +105,6 @@ const quantityCardComponent = computed(() => {
 const quantityCardProps = computed(() => (
   (
     props.prompt.component === 'guide-image-prompt'
-    || props.prompt.component === 'as-served-prompt'
     || props.prompt.component === 'standard-portion-prompt'
   ) && props.prompt.quantityCard === 'accessible'
     ? { foodLabel: foodName.value }
