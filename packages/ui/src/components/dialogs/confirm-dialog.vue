@@ -62,7 +62,6 @@
             class="mb-3"
             :color="color"
             size="large"
-            :title="confirmLabel"
             @click.stop="confirm"
           >
             <v-icon v-if="confirmIcon" start>
@@ -71,7 +70,7 @@
           </v-btn>
         </v-expand-transition>
 
-        <v-btn block :color="color" size="large" :title="cancelLabel" variant="outlined" @click.stop="cancel">
+        <v-btn block :color="color" size="large" variant="outlined" @click.stop="cancel">
           <v-icon v-if="cancelIcon" start>
             {{ cancelIcon }}
           </v-icon>{{ cancelLabel }}

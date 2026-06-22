@@ -49,7 +49,6 @@
                     :disabled="!newFood.description.length"
                     height="initial"
                     size="x-large"
-                    :title="promptI18n.add"
                     @click="checkForHints"
                   >
                     <v-icon start>

@@ -27,7 +27,6 @@
     <template #actions>
       <v-btn
         :disabled="!hasMeals"
-        :title="promptI18n.no"
         @click.stop="action('cancel')"
       >
         <v-icon icon="$cancel" start />
@@ -35,7 +34,6 @@
       </v-btn>
       <v-btn
         :disabled="!isValid"
-        :title="promptI18n.yes"
         @click="action('next')"
       >
         <v-icon icon="$add" start />

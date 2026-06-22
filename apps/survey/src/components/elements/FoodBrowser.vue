@@ -139,7 +139,6 @@
           color="primary"
           :disabled="missingDialog"
           size="large"
-          :title="promptI18n.browse"
           variant="outlined"
           @click.stop="browseRootCategory"
         >
@@ -150,7 +149,6 @@
           color="primary"
           :disabled="missingDialog"
           size="large"
-          :title="promptI18n['missing.label']"
           variant="outlined"
           @click.stop="openMissingDialog"
         >
@@ -162,7 +160,6 @@
           color="primary"
           :disabled="missingDialog"
           size="large"
-          :title="promptI18n['missing.irrelevantIngredient']"
           variant="outlined"
           @click.stop="skipTheStep"
         >

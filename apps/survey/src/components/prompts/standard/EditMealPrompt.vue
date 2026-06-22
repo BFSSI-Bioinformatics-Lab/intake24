@@ -25,7 +25,6 @@
     <template #actions>
       <v-btn
         v-if="!meal.flags.includes('meal-time:disabled')"
-        :title="$t('recall.actions.mealTime')"
         @click="action('mealTime', meal.id)"
       >
         <v-icon icon="fas fa-clock" start />
@@ -37,7 +36,6 @@
       >
         <template #activator="{ props }">
           <v-btn
-            :title="$t('recall.actions.deleteMeal')"
             v-bind="props"
           >
             <v-icon icon="$delete" start />
