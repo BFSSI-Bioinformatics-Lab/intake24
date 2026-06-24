@@ -1,7 +1,7 @@
 <template>
   <v-card flat tile>
-    <v-toolbar color="grey-lighten-4">
-      <v-icon color="secondary" end icon="fas fa-bars-staggered" />
+    <v-toolbar color="surface">
+      <v-icon end icon="fas fa-bars-staggered" />
       <v-toolbar-title class="font-weight-medium">
         {{ $t('faqs.sections.title') }}
       </v-toolbar-title>
@@ -30,6 +30,7 @@
         <json-editor-dialog v-model="items" @update:model-value="update" />
       </options-menu>
     </v-toolbar>
+    <v-divider />
     <vue-draggable
       v-model="items"
       :animation="300"
@@ -84,7 +85,7 @@
       :z-index="1050"
     >
       <v-card tile>
-        <v-toolbar color="secondary" dark>
+        <v-toolbar>
           <v-btn icon="$cancel" :title="$t('common.action.cancel')" variant="plain" @click.stop="reset" />
           <v-toolbar-title>
             <v-icon icon="fas fa-bars-staggered" start />
@@ -100,7 +101,7 @@
           </v-toolbar-items>
           <template #extension>
             <v-container>
-              <v-tabs v-model="tab" bg-color="secondary">
+              <v-tabs v-model="tab">
                 <v-tab v-for="item in ['general', 'json']" :key="item" :value="item">
                   {{ $t(`common.tabs.${item}`) }}
                 </v-tab>

@@ -1,5 +1,5 @@
 <template>
-  <layout v-if="entryLoaded" v-bind="{ id, entry }">
+  <entry-layout v-if="entryLoaded" v-bind="{ id, entry }">
     <template #actions>
       <confirm-dialog
         v-if="can({ action: 'edit' })"
@@ -8,6 +8,9 @@
         :label="$t('tasks.run._')"
         @confirm="triggerJob"
       >
+        <template #activator="{ props }">
+          <v-list-item v-bind="props" prepend-icon="fas fa-play" :title="$t('tasks.run._')" />
+        </template>
         {{ $t('tasks.run.confirm') }}
       </confirm-dialog>
     </template>
@@ -49,7 +52,7 @@
         </tr>
       </tbody>
     </v-table>
-  </layout>
+  </entry-layout>
 </template>
 
 <script lang="ts">

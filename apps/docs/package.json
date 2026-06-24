@@ -1,7 +1,7 @@
 {
   "name": "@intake24/docs",
   "type": "module",
-  "version": "2026.1.0",
+  "version": "2026.2.0",
   "private": true,
   "description": "Intake24 documentation",
   "license": "Apache-2.0",
@@ -17,9 +17,10 @@
     "open-api": "pnpm unrun scripts/open-api.ts"
   },
   "devDependencies": {
-    "@openapi-contrib/json-schema-to-openapi-schema": "^4.3.2",
+    "@openapi-contrib/json-schema-to-openapi-schema": "^4.3.4",
     "@ts-rest/open-api": "3.53.0-rc.1",
     "@types/node": "^24.13.2",
+    "mermaid": "^11.15.0",
     "typescript": "^6.0.3",
     "unrun": "^0.3.1",
     "vitepress": "2.0.0-alpha.17",

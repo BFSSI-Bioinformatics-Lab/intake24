@@ -12,6 +12,10 @@ export default {
             autoIncrement: true,
             primaryKey: true,
           },
+          old_id: {
+            type: Sequelize.BIGINT,
+            allowNull: false,
+          },
           code: {
             type: Sequelize.STRING(64),
             allowNull: false,
@@ -118,8 +122,8 @@ export default {
       });
 
       await queryInterface.sequelize.query(
-        `INSERT INTO food_builders (code, locale_id, name, trigger_word, synonym_set_id, type, steps, created_at, updated_at)
-          SELECT code, locale_id, "name", recipe_word, synonyms_id, 'recipe', '[]'::jsonb, created_at, updated_at FROM recipe_foods ORDER BY id;`,
+        `INSERT INTO food_builders (old_id, code, locale_id, name, trigger_word, synonym_set_id, type, steps, created_at, updated_at)
+          SELECT id, code, locale_id, "name", recipe_word, synonyms_id, 'recipe', '[]'::jsonb, created_at, updated_at FROM recipe_foods ORDER BY id;`,
         { transaction },
       );
 
@@ -151,24 +155,24 @@ export default {
         }));
 
         await queryInterface.sequelize.query(
-          `UPDATE food_builders SET steps = :steps WHERE id = :id;`,
+          `UPDATE food_builders SET steps = :steps WHERE old_id = :old_id;`,
           {
             replacements: {
               steps: JSON.stringify(steps),
-              id: record.id,
+              old_id: record.id,
             },
             transaction,
           },
         );
       }
 
-      // await queryInterface.dropTable('recipe_foods_steps', { transaction });
-      // await queryInterface.dropTable('recipe_foods', { transaction });
+      await queryInterface.removeColumn('food_builders', 'old_id', { transaction });
+
+      await queryInterface.dropTable('recipe_foods_steps', { transaction });
+      await queryInterface.dropTable('recipe_foods', { transaction });
     }),
 
-  down: queryInterface =>
-    queryInterface.sequelize.transaction(async (transaction) => {
-      await queryInterface.dropTable('food_builders', { transaction });
-      await queryInterface.sequelize.query(`DROP TYPE enum_food_builders_type;`, { transaction });
-    }),
+  down: () => {
+    throw new Error('This migration cannot be undone');
+  },
 };

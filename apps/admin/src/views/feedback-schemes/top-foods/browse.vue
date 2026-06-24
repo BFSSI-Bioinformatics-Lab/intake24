@@ -1,5 +1,5 @@
 <template>
-  <layout
+  <entry-layout
     v-if="entryLoaded && refsLoaded"
     v-bind="{ id, entry }"
     v-model:route-leave="routeLeave"
@@ -8,10 +8,8 @@
     <template #actions>
       <preview :feedback-scheme="currentFeedbackScheme" :images="refs?.images" />
     </template>
-    <v-toolbar color="grey-lighten-4">
-      <v-icon color="secondary" end>
-        fas fa-sort-amount-down
-      </v-icon>
+    <v-toolbar color="surface">
+      <v-icon end icon="fas fa-sort-amount-down" />
       <v-toolbar-title class="font-weight-medium">
         {{ $t('feedback-schemes.top-foods.title') }}
       </v-toolbar-title>
@@ -36,33 +34,34 @@
       <v-container fluid>
         <v-row>
           <v-col cols="12" md="6">
-            <v-toolbar color="grey-lighten-2">
-              <v-icon color="secondary" end>
-                fas fa-palette
-              </v-icon>
-              <v-toolbar-title class="font-weight-medium">
-                {{ $t('feedback-schemes.top-foods.max.title') }}
-              </v-toolbar-title>
-              <v-spacer />
-              <v-text-field
-                v-model.number="data.topFoods.max"
-                bg-color="grey lighten-5"
-                density="compact"
-                :error-messages="errors.get('topFoods.max')"
-                hide-details
-                :label="$t('feedback-schemes.top-foods.max._')"
-                name="topFoods.max"
-                :rules="topFoodsMaxRules"
-                single-line
-                :style="{ maxWidth: '75px' }"
-                variant="outlined"
+            <v-card border>
+              <v-toolbar color="surface">
+                <v-icon end icon="fas fa-palette" />
+                <v-toolbar-title class="font-weight-medium">
+                  {{ $t('feedback-schemes.top-foods.max.title') }}
+                </v-toolbar-title>
+                <v-spacer />
+                <v-text-field
+                  v-model.number="data.topFoods.max"
+                  bg-color="grey lighten-5"
+                  density="compact"
+                  :error-messages="errors.get('topFoods.max')"
+                  hide-details
+                  :label="$t('feedback-schemes.top-foods.max._')"
+                  name="topFoods.max"
+                  :rules="topFoodsMaxRules"
+                  single-line
+                  :style="{ maxWidth: '75px' }"
+                  variant="outlined"
+                />
+              </v-toolbar>
+              <v-divider />
+              <error-list :errors="nonInputErrors" />
+              <color-list
+                v-model="data.topFoods.colors"
+                :last-label="$t('feedback-schemes.top-foods.other')"
               />
-            </v-toolbar>
-            <error-list :errors="nonInputErrors" />
-            <color-list
-              v-model="data.topFoods.colors"
-              :last-label="$t('feedback-schemes.top-foods.other')"
-            />
+            </v-card>
           </v-col>
           <v-col cols="12" md="6">
             <nutrient-list
@@ -77,7 +76,7 @@
         <submit-footer :disabled="errors.any.value" />
       </v-card-text>
     </v-form>
-  </layout>
+  </entry-layout>
 </template>
 
 <script lang="ts">

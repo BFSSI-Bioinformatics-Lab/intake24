@@ -1,6 +1,6 @@
 <template>
-  <layout v-if="entryLoaded" v-bind="{ id, entry }" v-model:route-leave="routeLeave" @save="submit">
-    <v-toolbar color="grey-lighten-4">
+  <entry-layout v-if="entryLoaded" v-bind="{ id, entry }" v-model:route-leave="routeLeave" @save="submit">
+    <v-toolbar color="surface">
       <v-toolbar-title class="font-weight-medium">
         {{ $t(`survey-schemes.prompts.title`) }}
       </v-toolbar-title>
@@ -43,7 +43,7 @@
         @update:subsection-layouts="updateSubsectionLayouts(section, $event)"
       />
     </v-expansion-panels>
-  </layout>
+  </entry-layout>
 </template>
 
 <script lang="ts">

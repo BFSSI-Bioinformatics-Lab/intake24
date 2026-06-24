@@ -1,39 +1,67 @@
 <template>
-  <v-card
-    class="mb-5 px-2"
-    :flat="$vuetify.display.mobile"
-    :rounded="$vuetify.display.mobile ? 0 : undefined"
-  >
-    <v-toolbar class="toolbar-items" color="white">
-      <v-btn color="grey-darken-1" :title="$t(`common.action.back`)" :to="{ name: resource.name }" variant="flat">
-        <v-icon icon="$back" start />{{ $t(`common.action.back`) }}
-      </v-btn>
+  <v-card border class="ma-2 pa-4" flat rounded="xl">
+    <v-toolbar color="surface">
       <v-btn
-        v-if="editsResource"
-        color="secondary"
-        :title="$t(`common.action.save`)"
-        variant="flat"
-        @click="$emit('save')"
-      >
-        <v-icon icon="$save" start />{{ $t(`common.action.save`) }}
-      </v-btn>
-      <slot name="actions" />
+        icon="$back"
+        :title="$t(`common.action.back`)"
+        :to="{ name: resource.name }"
+        variant="text"
+      />
+      <v-breadcrumbs v-if="breadcrumbs.length" class="px-1 py-2" :items="breadcrumbs">
+        <template #divider>
+          <v-icon icon="fas fa-caret-right" />
+        </template>
+      </v-breadcrumbs>
       <v-spacer />
-      <confirm-dialog
-        v-if="canHandleEntry('delete')"
-        color="error"
-        icon-left="$delete"
-        :label="$t('common.action.delete')"
-        :typed-confirm="['surveys'].includes(resource.name) ? entry.name : undefined"
-        variant="flat"
-        @confirm="remove"
-      >
-        {{ $t('common.action.confirm.delete', { name: entry.name ? entry.name : entry.id }) }}
-      </confirm-dialog>
+      <div class="d-flex align-center gc-2">
+        <v-menu
+          v-if="slots.actions || canHandleEntry('delete')"
+          :close-on-content-click="true"
+          :persistent="false"
+        >
+          <template #activator="{ props }">
+            <v-btn
+              v-bind="props"
+              icon="$options"
+              size="small"
+              :title="$t('common.options._')"
+            />
+          </template>
+          <v-list>
+            <slot name="actions" />
+            <v-divider v-if="slots.actions" />
+            <confirm-dialog
+              v-if="canHandleEntry('delete')"
+              color="error"
+              icon-left="$delete"
+              :label="$t('common.action.delete')"
+              :typed-confirm="['surveys'].includes(resource.name) ? entry?.name : undefined"
+              @confirm="remove"
+            >
+              <template #activator="{ props }">
+                <v-list-item
+                  v-bind="props"
+                  base-color="error"
+                  prepend-icon="$delete"
+                  :title="$t('common.action.delete')"
+                />
+              </template>
+              {{ $t('common.action.confirm.delete', { name: entry?.name ?? entry?.id }) }}
+            </confirm-dialog>
+          </v-list>
+        </v-menu>
+        <v-btn
+          v-if="editsResource"
+          color="primary"
+          rounded="pill"
+          :title="$t(`common.action.save`)"
+          @click="$emit('save')"
+        >
+          <v-icon icon="$save" start />{{ $t(`common.action.save`) }}
+        </v-btn>
+      </div>
     </v-toolbar>
-  </v-card>
-  <v-card :border="!$vuetify.display.mobile" :flat="$vuetify.display.mobile" :tile="$vuetify.display.mobile">
-    <v-tabs bg-color="primary">
+    <v-tabs color="primary">
       <v-tab
         v-for="tab in tabs"
         :key="tab"
@@ -44,13 +72,14 @@
         {{ tabTitle(tab) }}
       </v-tab>
     </v-tabs>
+    <v-divider />
     <slot />
+    <slot name="addons" />
+    <confirm-leave-dialog
+      :model-value="routeLeave"
+      @update:model-value="$emit('update:routeLeave', $event)"
+    />
   </v-card>
-  <slot name="addons" />
-  <confirm-leave-dialog
-    :model-value="routeLeave"
-    @update:model-value="$emit('update:routeLeave', $event)"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -60,15 +89,16 @@ import type { RouteLeave } from '@intake24/admin/types';
 import type { Dictionary } from '@intake24/common/types';
 
 import { has } from 'lodash-es';
-import { computed, inject } from 'vue';
+import { computed, inject, useSlots } from 'vue';
 import { useRouter } from 'vue-router';
 
+import { useBreadcrumbs } from '@intake24/admin/composables/use-breadcrumbs.ts';
 import resources from '@intake24/admin/router/resources';
 import { useHttp } from '@intake24/admin/services';
 import { useMessages, useResource, useUser } from '@intake24/admin/stores';
 import { ConfirmDialog, useI18n } from '@intake24/ui';
 
-import ConfirmLeaveDialog from './confirm-leave-dialog.vue';
+import { ConfirmLeaveDialog } from '../dialogs';
 
 defineOptions({ name: 'EntryLayout' });
 
@@ -79,7 +109,6 @@ const props = defineProps({
   },
   entry: {
     type: Object as PropType<Dictionary>,
-    required: true,
   },
   routeLeave: {
     type: Object as PropType<RouteLeave>,
@@ -94,12 +123,15 @@ const props = defineProps({
 defineEmits(['save', 'update:routeLeave']);
 
 const editsResource = inject('editsResource', false);
+const slots = useSlots();
 
 const { i18n: { t, locale, messages } } = useI18n();
 const resource = useResource();
 const { can } = useUser();
 const http = useHttp();
 const router = useRouter();
+
+const { breadcrumbs } = useBreadcrumbs();
 
 const resourceDef = computed(
   () => resources.find(item => item.name === resource.name),
@@ -110,7 +142,7 @@ const tabs = computed(() => {
   if (isCreate.value)
     return ['create'];
 
-  if (!resourceDef.value)
+  if (!resourceDef.value || !props.entry)
     return [];
 
   const { securables, ownerId } = props.entry;
@@ -124,7 +156,7 @@ const tabs = computed(() => {
 });
 
 function canHandleEntry(action: string) {
-  if (isCreate.value)
+  if (isCreate.value || !props.entry)
     return false;
 
   const { securables, ownerId } = props.entry;
@@ -137,6 +169,9 @@ function tabTitle(tab: string) {
 };
 
 async function remove() {
+  if (!props.entry)
+    return;
+
   const { id, name } = props.entry;
 
   await http.delete(`${resource.api}/${props.id}`);

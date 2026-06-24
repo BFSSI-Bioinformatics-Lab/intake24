@@ -1,7 +1,7 @@
 <template>
-  <v-card flat tile>
-    <v-toolbar color="grey-lighten-2">
-      <v-icon color="secondary" end icon="$nutrient-types" />
+  <v-card border>
+    <v-toolbar color="surface">
+      <v-icon end icon="$nutrient-types" />
       <v-toolbar-title class="font-weight-medium">
         {{ $t('nutrient-types.title') }}
       </v-toolbar-title>
@@ -25,6 +25,7 @@
         {{ $t('nutrient-types.reset.text') }}
       </confirm-dialog>
     </v-toolbar>
+    <v-divider />
     <v-list class="list-border">
       <vue-draggable
         v-model="items"
@@ -66,7 +67,7 @@
       persistent
     >
       <v-card :tile="$vuetify.display.smAndDown">
-        <v-toolbar color="secondary">
+        <v-toolbar>
           <v-icon end icon="$nutrient-types" />
           <v-toolbar-title>
             {{ $t(`nutrient-types.${dialog.index === -1 ? 'create' : 'edit'}`) }}

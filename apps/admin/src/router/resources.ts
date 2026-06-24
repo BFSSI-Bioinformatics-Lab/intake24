@@ -9,7 +9,7 @@ export const resources: Resource[] = [
     icon: 'fas fa-circle-user',
     api: 'admin/user/jobs',
     generateRoutes: false,
-    routes: ['read'],
+    routes: ['create', 'read'],
   },
   // Food databases
   {
@@ -196,7 +196,7 @@ export const resources: Resource[] = [
     icon: 'fas fa-photo-film',
     api: 'admin/media',
     generateRoutes: true,
-    routes: [...routes],
+    routes: ['read', 'edit'],
   },
   // System
   {
