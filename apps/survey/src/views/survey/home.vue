@@ -4,7 +4,7 @@
       <v-col cols="12" lg="9">
         <v-card :tile="$vuetify.display.mobile">
           <!-- Survey info -->
-          <v-card-title class="text-headline-small font-weight-medium mb-2 pt-4">
+          <v-card-title class="text-headline-small font-weight-medium mb-2 pt-4" tag="h1">
             {{ $t('survey.welcome._') }}
           </v-card-title>
           <v-card-subtitle class="pb-4">
