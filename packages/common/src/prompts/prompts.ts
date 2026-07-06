@@ -173,6 +173,9 @@ export const linkedQuantity = z.object({
 });
 export type LinkedQuantity = z.infer<typeof linkedQuantity>;
 
+export const quantityCards = ['classic', 'accessible'] as const;
+export type QuantityCard = (typeof quantityCards)[number];
+
 export const reviewOptions = [false, 'scroll', 'checkbox', 'onecheckbox'] as const;
 export type ReviewOptions = (typeof reviewOptions)[number];
 
@@ -300,6 +303,7 @@ const guideImagePrompt = z.object({
   component: z.literal('guide-image-prompt'),
   imageMap,
   linkedQuantity,
+  quantityCard: z.enum(quantityCards).default('classic'),
 });
 
 const milkInAHotDrinkPrompt = z.object({
@@ -330,12 +334,14 @@ const pizzaPrompt = z.object({
   ...basePortionPrompt.shape,
   component: z.literal('pizza-prompt'),
   imageMap,
+  quantityCard: z.enum(quantityCards).default('classic'),
 });
 
 const pizzaV2Prompt = z.object({
   ...basePortionPrompt.shape,
   component: z.literal('pizza-v2-prompt'),
   imageMap,
+  quantityCard: z.enum(quantityCards).default('classic'),
 });
 
 const genericBuilderPrompt = z.object({
@@ -361,6 +367,7 @@ const standardPortionPrompt = z.object({
   ...basePortionPrompt.shape,
   component: z.literal('standard-portion-prompt'),
   linkedQuantity,
+  quantityCard: z.enum(quantityCards).default('classic'),
 });
 
 const unknownPrompt = z.object({
