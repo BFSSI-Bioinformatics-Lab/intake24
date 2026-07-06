@@ -5,7 +5,7 @@
     @action="action"
   >
     <v-card-text>
-      <v-form @submit.prevent="customAction">
+      <v-form @submit.prevent="action('next')">
         <v-row>
           <v-col cols="12" md="auto">
             <v-select
@@ -24,7 +24,7 @@
       </v-form>
     </v-card-text>
     <template #actions>
-      <next :disabled="!isValid" @click="customAction" />
+      <next :disabled="!isValid" @click="action('next')" />
     </template>
   </component>
 </template>
@@ -32,13 +32,9 @@
 <script lang="ts" setup>
 import type { PropType } from 'vue';
 
-import type { EncodedFood } from '@intake24/common/surveys';
-
 import { computed } from 'vue';
 
 import { usePromptUtils } from '@intake24/survey/composables';
-import { foodsService } from '@intake24/survey/services';
-import { useSurvey } from '@intake24/survey/stores';
 import { useI18n } from '@intake24/ui';
 
 import { BaseLayout, CardLayout, PanelLayout } from '../layouts';
@@ -61,7 +57,6 @@ const emit = defineEmits(['action', 'update:modelValue']);
 
 const { i18n: { locale, t } } = useI18n();
 const { action, customPromptLayout, type } = usePromptUtils(props, { emit });
-const survey = useSurvey();
 
 const state = computed({
   get() {
@@ -88,41 +83,6 @@ const isValid = computed(() => {
 const localeOptions = computed(
   () => props.prompt.options[locale.value] ?? props.prompt.options.en,
 );
-
-async function customAction() {
-  if (props.prompt.updateFood) {
-    const foodId = props.food?.id;
-    const selectedValue = Array.isArray(state.value) ? undefined : state.value;
-    const opt = selectedValue === undefined || selectedValue === null
-      ? undefined
-      : localeOptions.value.find(o => o.value === selectedValue || String(o.value) === String(selectedValue));
-    const foodCode = opt?.updateFoodValue?.trim();
-
-    if (foodId && foodCode && foodCode !== 'NO_UPDATE') {
-      try {
-        const foodData = await foodsService.getData(survey.localeId, foodCode);
-        const newFood: EncodedFood = {
-          id: foodId,
-          type: 'encoded-food',
-          data: foodData,
-          searchTerm: props.food?.searchTerm ?? '',
-          portionSizeMethodIndex: null,
-          portionSize: null,
-          customPromptAnswers: props.food?.customPromptAnswers ?? {},
-          flags: props.food?.flags ?? [],
-          linkedFoods: [],
-        };
-
-        survey.replaceFood({ foodId, food: newFood });
-      }
-      catch (error) {
-        console.error('SelectPrompt failed to replace food:', error);
-      }
-    }
-  }
-
-  action('next');
-}
 
 defineExpose({ isValid });
 </script>

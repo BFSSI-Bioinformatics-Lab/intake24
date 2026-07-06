@@ -261,11 +261,6 @@
     "move": "Déplacer l'invite",
     "remove": "Enlever l'invite",
     "section": "Section des invites",
-    "subsection": {
-      "add": "Ajouter une sous-section",
-      "rename": "Renommer la sous-section",
-      "change": "Changer de sous-section"
-    },
     "preMeals": {
       "title": "Invites pré-rappel",
       "subtitle": "Invites générales affichées avant le rappel alimentaire, incluant des invites personnelles et les consignes initiales."
@@ -709,7 +704,8 @@
       "subtitle": "Demander de choisir une heure"
     },
     "checkbox-list-prompt": {
-      "title": "Choix multiple"
+      "title": "Choix multiple",
+      "subtitle": "Demander de choisir n'importe quel nombre d'éléments d'une liste"
     },
     "radio-list-prompt": {
       "title": "Choix unique",
@@ -731,9 +727,7 @@
       "title": "Choix OUI/NON",
       "subtitle": "Demander de choisir oui ou non",
       "useFlag": "Set a flag instead of custom prompt answer",
-      "flag": "Flag",
-      "updateFoodYes": "Code aliment pour Oui",
-      "updateFoodNo": "Code aliment pour Non"
+      "flag": "Flag"
     },
     "aggregate-choice-prompt": {
       "title": "Question agregée sur plusieurs aliments",
