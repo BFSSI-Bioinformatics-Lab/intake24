@@ -9,6 +9,11 @@
 // Components
 @use 'time-picker';
 
+// Not padded sidebar
+.v-list-group__items .v-list-item {
+  padding-inline-start: 8px !important;
+}
+
 .list-border {
   .v-list-item:not(:last-child) {
     border-bottom: 1px solid map.get(settings.$grey, 'lighten-3');
@@ -40,6 +45,14 @@
   position: absolute;
 }
 
+ul.v-breadcrumbs {
+  padding-left: 12px;
+}
+
+.v-breadcrumbs--large {
+  font-weight: 600;
+}
+
 .dialog-container {
   display: flex;
   flex-direction: column;
@@ -54,4 +67,21 @@
 
 .json-editor {
   --jse-theme-color: rgb(var(--v-theme-info));
+}
+
+.prompt-subsection {
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  border-radius: 4px;
+}
+
+.prompt-subsection__title {
+  background: rgba(var(--v-theme-on-surface), 0.03);
+}
+
+.prompt-subsection__name {
+  max-width: 260px;
+}
+
+.prompt-subsection__handle {
+  cursor: grab;
 }
