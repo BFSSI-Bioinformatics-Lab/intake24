@@ -66,6 +66,7 @@
           "locales": "Locale configuration",
           "foods": "Food list",
           "categories": "Category list",
+          "synonymSets": "Synonym sets",
           "asServedSets": "\"As served\" image sets",
           "imageMaps": "Image maps (required for guide images and drinkware)",
           "guideImages": "Guide images",
@@ -111,7 +112,16 @@
     "packageJsonMalformed": "Malformed package.json",
     "importPermission": "Uploader lacks permission to import packages",
     "albaneRequiredFileMissing": "The file is required but was not found in the uploaded ZIP",
-    "albaneRequiredFileWrongPath": "The file must be located at the root of the archive, but it was found at '{archivePath}'. Please repackage the ZIP file correctly and try again."
+    "albaneRequiredFileWrongPath": "The file must be located at the root of the archive, but it was found at '{archivePath}'. Please repackage the ZIP file correctly and try again.",
+    "xlsx": {
+      "missingSheet": "Missing required sheet \"{sheetName}\"",
+      "invalidHeader": "Sheet \"{sheetName}\": invalid header in column {columnIndex}: expected \"{columnName}\", found \"{actualHeader}\"",
+      "missingColumn": "Sheet \"{sheetName}\": missing required column {columnIndex}: expected \"{columnName}\"",
+      "cellCannotBeEmpty": "Sheet \"{sheetName}\", row {rowNumber}: cell {columnIndex} (\"{columnName}\") cannot be empty",
+      "cellInvalidValue": "Sheet \"{sheetName}\", row {rowNumber}: cell {columnIndex} (\"{columnName}\") has invalid value \"{value}\"; expected {expected}",
+      "foodCodeNotFound": "Sheet \"{sheetName}\", row {rowNumber}: food code \"{foodCode}\" does not exist in the foods master list",
+      "associatedFoodCodeNotFound": "Sheet \"{sheetName}\", row {rowNumber}: associated food code \"{foodCode}\" does not exist in the foods master list or is marked for deletion"
+    }
   },
   "importJob": {
     "invalidVerification": "A successful verification job is required before importing a package",
@@ -147,8 +157,13 @@
       "locales": "Locales",
       "foods": "Food list",
       "categories": "Category list",
+      "synonymSets": "Synonym sets",
       "portionSizeMethods": "Portion size data",
       "portionSizeImages": "Portion size images"
+    },
+    "xlsxOptions": {
+      "_": "Export options",
+      "includeActionColumn": "Include \"Action\" column"
     },
     "portionSizeImagesWarning": "This will include original full-resolution portion size images, which may result in a very large download (several gigabytes)."
   }

@@ -204,6 +204,8 @@ function localeService({ scheduler, cache, kyselyDb }: Pick<IoC, 'scheduler' | '
     if (input.length === 0)
       return;
 
+    const dirtyLocaleCodes = input.map(locale => locale.code);
+
     const foodsImpl = async (transaction: Kysely<FoodsDB>) => {
       const values = input.map(locale => ({
         id: locale.code,
@@ -360,6 +362,65 @@ function localeService({ scheduler, cache, kyselyDb }: Pick<IoC, 'scheduler' | '
     else {
       await kyselyDb.system.transaction().execute(systemImpl);
     }
+
+    if (dirtyLocaleCodes.length) {
+      await cache.setAdd('locales-index', ...dirtyLocaleCodes);
+    }
+  };
+
+  const bulkUpdateSynonymSets = async (
+    localeId: string,
+    input: { synonyms: string }[],
+    onConflict: OnConflictOption,
+    transaction?: Kysely<FoodsDB>,
+  ) => {
+    const impl = async (transaction: Kysely<FoodsDB>) => {
+      const existingRows = await transaction
+        .selectFrom('synonymSets')
+        .select('id')
+        .where('localeId', '=', localeId)
+        .execute();
+
+      switch (onConflict) {
+        case 'overwrite': {
+          if (existingRows.length) {
+            await transaction
+              .deleteFrom('synonymSets')
+              .where('localeId', '=', localeId)
+              .execute();
+          }
+          break;
+        }
+
+        case 'skip': {
+          if (existingRows.length)
+            return;
+          break;
+        }
+
+        case 'abort': {
+          if (existingRows.length)
+            throw new ConflictError(`Synonym sets already exist for locale: ${localeId}`);
+          break;
+        }
+      }
+
+      if (input.length) {
+        await transaction
+          .insertInto('synonymSets')
+          .values(input.map(({ synonyms }) => ({ localeId, synonyms })))
+          .execute();
+      }
+
+      await cache.setAdd('locales-index', localeId);
+    };
+
+    if (transaction) {
+      await impl(transaction);
+    }
+    else {
+      await kyselyDb.foods.transaction().execute(impl);
+    }
   };
 
   /**
@@ -381,6 +442,7 @@ function localeService({ scheduler, cache, kyselyDb }: Pick<IoC, 'scheduler' | '
     setSynonymSets,
     queueTask,
     bulkUpdateLocales,
+    bulkUpdateSynonymSets,
   };
 }
 

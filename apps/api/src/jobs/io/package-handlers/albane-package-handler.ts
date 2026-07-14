@@ -17,6 +17,7 @@ import { unzipFile } from '../../../util/files';
 import { AlbaneLocaleBuilder } from '../import/albane/albane-locale-builder';
 import { getVerifiedOutputPath } from '../import/utils';
 import { PackageValidationFileErrors } from './types';
+import { writeJsonFile } from './utils';
 import { getFileValidationErrorMessages, validateJsonFiles } from './validate-json-files';
 
 export class AlbanePackageHandler implements PackageHandler {
@@ -78,6 +79,10 @@ export class AlbanePackageHandler implements PackageHandler {
       Object.keys(packageContents.categories).forEach(locale => targetLocales.add(locale));
     }
 
+    if (packageContents.synonymSets) {
+      Object.keys(packageContents.synonymSets).forEach(locale => targetLocales.add(locale));
+    }
+
     return {
       extractedPath: convertedPath,
       summary: {
@@ -86,6 +91,7 @@ export class AlbanePackageHandler implements PackageHandler {
           locales: !!packageContents.locales,
           foods: !!packageContents.foods,
           categories: !!packageContents.categories,
+          synonymSets: !!packageContents.synonymSets,
           asServedSets: !!packageContents.asServedSets,
           imageMaps: !!packageContents.imageMaps,
           guideImages: !!packageContents.guideImages,
@@ -189,13 +195,7 @@ export class AlbanePackageHandler implements PackageHandler {
   }
 
   private async writeConvertedPackage(convertedPackagePath: string, result: AlbaneConversionResult): Promise<void> {
-    const writeJson = async (filename: string, data: unknown) => {
-      await fs.writeFile(
-        path.join(convertedPackagePath, filename),
-        JSON.stringify(data, null, 2),
-        'utf-8',
-      );
-    };
+    const writeJson = (filename: string, data: unknown) => writeJsonFile(convertedPackagePath, filename, data);
 
     const writes = [
       writeJson('package.json', {

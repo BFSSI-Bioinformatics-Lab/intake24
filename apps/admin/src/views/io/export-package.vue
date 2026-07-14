@@ -138,6 +138,17 @@
                   <v-radio :label="$t('io.export.format.default')" value="json" />
                   <v-radio :label="$t('io.export.format.xlsx')" value="xlsx" />
                 </v-radio-group>
+                <div v-if="exportFormat === 'xlsx'" class="mt-4 pl-4">
+                  <v-label>
+                    {{ $t('io.export.xlsxOptions._') }}
+                  </v-label>
+                  <v-checkbox
+                    v-model="xlsxOptions.includeActionColumn"
+                    density="compact"
+                    hide-details
+                    :label="$t('io.export.xlsxOptions.includeActionColumn')"
+                  />
+                </div>
               </v-col>
               <v-col cols="12" md="6">
                 <v-label>
@@ -160,6 +171,12 @@
                   density="compact"
                   hide-details
                   :label="$t('io.export.includeOptions.categories')"
+                />
+                <v-checkbox
+                  v-model="includeFlags.synonymSets"
+                  density="compact"
+                  hide-details
+                  :label="$t('io.export.includeOptions.synonymSets')"
                 />
                 <v-checkbox
                   v-model="includeFlags.portionSizeMethods"
@@ -277,8 +294,13 @@ const includeFlags = reactive({
   locales: true,
   foods: true,
   categories: true,
+  synonymSets: true,
   portionSizeMethods: true,
   portionSizeImages: false,
+});
+
+const xlsxOptions = reactive({
+  includeActionColumn: false,
 });
 
 const includeOptions = computed(() => {
@@ -290,6 +312,8 @@ const includeOptions = computed(() => {
     options.push('foods');
   if (includeFlags.categories)
     options.push('categories');
+  if (includeFlags.synonymSets)
+    options.push('synonymSets');
   if (includeFlags.portionSizeMethods)
     options.push('portionSizeMethods');
   if (includeFlags.portionSizeImages)
@@ -298,7 +322,7 @@ const includeOptions = computed(() => {
 });
 
 const canExport = computed(() => {
-  return exportLocales.value.length > 0 && (includeFlags.foods || includeFlags.categories);
+  return exportLocales.value.length > 0 && (includeFlags.foods || includeFlags.categories || includeFlags.synonymSets);
 });
 
 watch(exportLocales, () => errors.clear('localeId'));
@@ -337,7 +361,10 @@ async function startExport() {
     const response = await http.post('/admin/packages/export', {
       format: exportFormat.value,
       locales: exportLocales.value.map(i => i.code),
-      options: { include: includeOptions.value },
+      options: {
+        include: includeOptions.value,
+        ...(exportFormat.value === 'xlsx' ? { xlsx: { includeActionColumn: xlsxOptions.includeActionColumn } } : {}),
+      },
     });
 
     queuedJobId.value = response.data.jobId;

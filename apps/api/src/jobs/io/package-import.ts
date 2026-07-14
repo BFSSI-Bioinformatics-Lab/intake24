@@ -3,7 +3,7 @@ import type { Job } from 'bullmq';
 import type { IoC } from '@intake24/api/ioc';
 import type { Dictionary } from '@intake24/common/types';
 import type { BulkCategoryInput, BulkFoodInput, LocaleRequest } from '@intake24/common/types/http/admin';
-import type { PkgV2CategoriesFile, PkgV2FoodsFile, PkgV2LocalesFile } from '@intake24/common/types/package/file-schemas';
+import type { PkgV2CategoriesFile, PkgV2FoodsFile, PkgV2LocalesFile, PkgV2SynonymSetsFile } from '@intake24/common/types/package/file-schemas';
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -14,9 +14,9 @@ import { LocalisableError, NotFoundError } from '@intake24/api/http/errors';
 import { Job as DbJob } from '@intake24/db';
 
 import BaseJob from '../job';
-import { fromPackageCategory, fromPackageFood, fromPackageLocale } from './import/type-conversions';
+import { fromPackageCategory, fromPackageFood, fromPackageLocale, fromPackageSynonymSet } from './import/type-conversions';
 import { getVerifiedOutputPath } from './import/utils';
-import { checkEditFoodListPermissions, checkGlobalLocalePermissions } from './permission-checks';
+import { checkGlobalLocalePermissions, checkImportLocalePermissions } from './permission-checks';
 
 const BATCH_SIZE = 200;
 
@@ -37,19 +37,25 @@ export default class PackageImport extends BaseJob<'PackageImport'> {
 
   private readonly localeService;
 
+  private readonly scheduler;
+
   private readonly kyselyDb;
 
   private readonly fsConfig;
 
-  constructor({ logger, globalAclService, adminCategoryService, adminFoodService, localeService, kyselyDb, fsConfig }: Pick<IoC, 'logger' | 'globalAclService' | 'adminCategoryService' | 'adminFoodService' | 'localeService' | 'kyselyDb' | 'fsConfig'>) {
+  private readonly packageIoConfig;
+
+  constructor({ logger, globalAclService, adminCategoryService, adminFoodService, localeService, scheduler, kyselyDb, fsConfig, packageIoConfig }: Pick<IoC, 'logger' | 'globalAclService' | 'adminCategoryService' | 'adminFoodService' | 'localeService' | 'scheduler' | 'kyselyDb' | 'fsConfig' | 'packageIoConfig'>) {
     super({ logger });
 
     this.globalAclService = globalAclService;
     this.adminCategoryService = adminCategoryService;
     this.adminFoodService = adminFoodService;
     this.localeService = localeService;
+    this.scheduler = scheduler;
     this.kyselyDb = kyselyDb;
     this.fsConfig = fsConfig;
+    this.packageIoConfig = packageIoConfig;
   }
 
   public async run(job: Job): Promise<void> {
@@ -118,6 +124,7 @@ export default class PackageImport extends BaseJob<'PackageImport'> {
     const filteredLocaleData: LocaleRequest[] = [];
     const filteredCategoryData: Dictionary<BulkCategoryInput[]> = {};
     const filteredFoodData: Dictionary<BulkFoodInput[]> = {};
+    const filteredSynonymSetData: Dictionary<{ synonyms: string }[]> = {};
 
     const localesWithFoodListChanges: Set<string> = new Set();
 
@@ -176,7 +183,19 @@ export default class PackageImport extends BaseJob<'PackageImport'> {
       }
     }
 
-    await checkEditFoodListPermissions(this.globalAclService, this.userId, localesWithFoodListChanges);
+    if (includeOptions.includes('synonymSets')) {
+      const packageSynonymSets = await this.readPackageFile<PkgV2SynonymSetsFile>('synonym-sets.json');
+
+      for (const [locale, synonymSets] of Object.entries(packageSynonymSets)) {
+        if (localeFilter?.length && !localeFilter.includes(locale))
+          continue;
+
+        localesWithFoodListChanges.add(locale);
+        filteredSynonymSetData[locale] = synonymSets.map(fromPackageSynonymSet);
+      }
+    }
+
+    await checkImportLocalePermissions(this.globalAclService, this.userId, localesWithFoodListChanges);
 
     await this.kyselyDb.system.transaction().execute(async (systemTransaction) => {
       await this.kyselyDb.foods.transaction().execute(async (foodsTransaction) => {
@@ -187,7 +206,10 @@ export default class PackageImport extends BaseJob<'PackageImport'> {
         for (const locale of [...localesWithFoodListChanges].toSorted()) {
           const categories = filteredCategoryData[locale];
           const foods = filteredFoodData[locale];
+          const synonymSets = filteredSynonymSetData[locale];
 
+          // FIXME: empty arrays are technically valid and should blank out the food/category list in the database
+          //        instead of being silently ignored
           if (categories?.length) {
             for (let i = 0; i < categories.length; i += BATCH_SIZE)
               await this.adminCategoryService.bulkUpdateCategories(locale, categories.slice(i, i + BATCH_SIZE), conflictStrategies.categories || 'abort', foodsTransaction);
@@ -197,9 +219,21 @@ export default class PackageImport extends BaseJob<'PackageImport'> {
             for (let i = 0; i < foods.length; i += BATCH_SIZE)
               await this.adminFoodService.bulkUpdateFoods(locale, foods.slice(i, i + BATCH_SIZE), conflictStrategies.foods || 'abort', foodsTransaction);
           }
+
+          if (synonymSets !== undefined) {
+            await this.localeService.bulkUpdateSynonymSets(locale, synonymSets, conflictStrategies.synonymSets || 'abort', foodsTransaction);
+          }
         }
       });
     });
+
+    if (this.packageIoConfig.instantIndexRebuild) {
+      await this.scheduler.jobs.addJob({
+        type: 'LocaleIndexBuild',
+        userId: this.userId,
+        params: { force: false },
+      });
+    }
 
     await this.job.updateProgress(1);
   }

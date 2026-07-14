@@ -8,6 +8,7 @@ export const packageIncludeOptions = [
   'locales',
   'foods',
   'categories',
+  'synonymSets',
   'portionSizeMethods',
   'portionSizeImages',
 ] as const;
@@ -23,6 +24,9 @@ export const packageExportOptions = z.object({
   locales: z.array(z.string()).nonempty(),
   options: z.object({
     include: z.array(z.enum(packageIncludeOptions)).nonempty(),
+    xlsx: z.object({
+      includeActionColumn: z.boolean().optional(),
+    }).optional(),
   }),
 });
 
@@ -32,6 +36,7 @@ export const packageFileTypes = [
   'locales',
   'foods',
   'categories',
+  'synonymSets',
   'asServedSets',
   'imageMaps',
   'guideImages',
