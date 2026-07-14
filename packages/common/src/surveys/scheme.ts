@@ -55,8 +55,8 @@ export type PromptSection = (typeof promptSections)[number];
 export const promptSubsectionLayout = z.object({
   id: z.string(),
   size: z.coerce.number().int().min(0),
-  expanded: z.boolean(),
-  name: z.string(),
+  expanded: z.boolean().optional(),
+  name: z.string().optional(),
 });
 export type PromptSubsectionLayout = z.infer<typeof promptSubsectionLayout>;
 
@@ -97,7 +97,7 @@ export const recallPrompts = z.object({
   postMeals: singlePrompt.array(),
   submission: singlePrompt.array(),
   ui: z.object({
-    subsectionLayouts: promptSubsectionLayouts,
+    subsectionLayouts: promptSubsectionLayouts.optional(),
   }).optional(),
 });
 export type RecallPrompts = z.infer<typeof recallPrompts>;
@@ -116,11 +116,15 @@ export const groupedRecallPrompts = z.object({
 export type GroupedRecallPrompts = z.infer<typeof groupedRecallPrompts>;
 
 export function flattenScheme(scheme: RecallPrompts): SinglePrompt[] {
-  return Object.values(scheme).reduce<SinglePrompt[]>((acc, prompts) => {
-    // @ts-expect-error fix
-    acc.push(...(Array.isArray(prompts) ? prompts : flattenScheme(prompts)));
-    return acc;
-  }, []);
+  return [
+    ...scheme.preMeals,
+    ...scheme.meals.preFoods,
+    ...scheme.meals.foods,
+    ...scheme.meals.postFoods,
+    ...scheme.meals.foodsDeferred,
+    ...scheme.postMeals,
+    ...scheme.submission,
+  ];
 }
 
 export function flattenSchemeWithSection(scheme: RecallPrompts): PromptWithSection[] {
